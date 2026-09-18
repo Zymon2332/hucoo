@@ -1,0 +1,80 @@
+package dev.hucoo.component.web.advice;
+
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import dev.hucoo.commons.api.PlatformConstants;
+import dev.hucoo.commons.dto.Result;
+import dev.hucoo.commons.exception.BusinessException;
+import dev.hucoo.commons.exception.CommonErrorCode;
+
+import jakarta.validation.ConstraintViolationException;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(BusinessException.class)
+    public Result<Void> handleBusinessException(BusinessException ex) {
+        log.warn("business exception: code={}, module={}, message={}", ex.getCode(), ex.getModule(), ex.getMessage());
+        return Result.<Void>fail(ex.getCode(), ex.getMessage()).withTraceId(org.slf4j.MDC.get(PlatformConstants.TRACE_ID_MDC_KEY));
+    }
+
+    @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
+    public Result<Void> handleBindException(BindException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(this::describeFieldError)
+                .collect(Collectors.joining("; "));
+        return badRequest(message);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public Result<Void> handleConstraintViolation(ConstraintViolationException ex) {
+        String message = ex.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .collect(Collectors.joining("; "));
+        return badRequest(message);
+    }
+
+    @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class})
+    public Result<Void> handleParameterException(Exception ex) {
+        return badRequest(ex.getMessage());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Result<Void>> handleUnhandledException(Exception ex) {
+        if (ex instanceof ErrorResponse errorResponse) {
+            int status = errorResponse.getStatusCode().value();
+            log.warn("request rejected: status={}, message={}", status, ex.getMessage());
+            return ResponseEntity.status(status)
+                    .body(Result.<Void>fail(status, ex.getMessage())
+                            .withTraceId(org.slf4j.MDC.get(PlatformConstants.TRACE_ID_MDC_KEY)));
+        }
+        log.error("unhandled exception", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Result.<Void>fail(CommonErrorCode.INTERNAL_ERROR.getCode(), CommonErrorCode.INTERNAL_ERROR.getMessage())
+                        .withTraceId(org.slf4j.MDC.get(PlatformConstants.TRACE_ID_MDC_KEY)));
+    }
+
+    private Result<Void> badRequest(String message) {
+        return Result.<Void>fail(CommonErrorCode.BAD_REQUEST.getCode(), message)
+                .withTraceId(org.slf4j.MDC.get(PlatformConstants.TRACE_ID_MDC_KEY));
+    }
+
+    private String describeFieldError(FieldError fieldError) {
+        return fieldError.getField() + ": " + fieldError.getDefaultMessage();
+    }
+}

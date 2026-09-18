@@ -1,0 +1,11 @@
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG

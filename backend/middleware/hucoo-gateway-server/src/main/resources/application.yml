@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: hucoo-gateway-server
+  profiles:
+    active: dev
+  config:
+    import:
+      - optional:nacos:hucoo-gateway-server.yml
+      - optional:nacos:common.yml
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      username: nacos
+      password: nacos
+      discovery:
+        namespace: public
+        group: DEFAULT_GROUP
+        naming-cache-persist: true
+      config:
+        namespace: public
+        group: DEFAULT_GROUP
+        file-extension: yml
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            - id: admin-route
+              uri: lb://hucoo-application-admin
+              predicates:
+                - Path=/api/admin/**
+              filters:
+                - AddResponseHeader=X-Gateway-Node, hucoo-gateway-server
+          httpclient:
+            connect-timeout: 3000
+            response-timeout: 10s
+
+agent-platform:
+  gateway:
+    auth:
+      enabled: false
+      token-header: Authorization
+      whitelist:
+        - /actuator/**
+        - /api/admin/v1/public/**
+        - /api/admin/v1/auth/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,loggers
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    dev.hucoo: INFO
+    org.springframework.cloud.gateway: INFO

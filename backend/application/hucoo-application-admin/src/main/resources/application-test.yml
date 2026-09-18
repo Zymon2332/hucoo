@@ -1,0 +1,17 @@
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+
+agent-platform:
+  persistence:
+    enabled: false
+  security:
+    enabled: false
+
+logging:
+  level:
+    dev.hucoo: INFO

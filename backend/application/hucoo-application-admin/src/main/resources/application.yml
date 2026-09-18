@@ -1,0 +1,123 @@
+server:
+  port: 8081
+  tomcat:
+    threads:
+      virtual:
+        enabled: true
+  shutdown: graceful
+
+spring:
+  application:
+    name: hucoo-application-admin
+  profiles:
+    active: dev
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  config:
+    import:
+      - optional:nacos:hucoo-application-admin.yml
+      - optional:nacos:common.yml
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+      username: nacos
+      password: nacos
+      discovery:
+        namespace: public
+        group: DEFAULT_GROUP
+        naming-cache-persist: true
+      config:
+        namespace: public
+        group: DEFAULT_GROUP
+        file-extension: yml
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          default:
+            connect-timeout: 3000
+            read-timeout: 5000
+  datasource:
+    url: jdbc:h2:mem:hucoo_agent_platform;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+    hikari:
+      pool-name: HucooAgentPlatformHikariPool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  cache:
+    type: caffeine
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      timeout: 3s
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: dev.hucoo.*.domain.entity
+  global-config:
+    banner: false
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+agent-platform:
+  persistence:
+    enabled: false
+  security:
+    enabled: false
+  cache:
+    type: caffeine
+    ttl-minutes: 30
+  integration:
+    git:
+      base-url: http://127.0.0.1:9999
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,loggers
+  endpoint:
+    health:
+      show-details: always
+  health:
+    redis:
+      enabled: false
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    dev.hucoo: INFO

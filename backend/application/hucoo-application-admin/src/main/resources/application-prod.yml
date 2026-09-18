@@ -1,0 +1,34 @@
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+      config:
+        enabled: true
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/hucoo_agent_platform?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: root
+  flyway:
+    enabled: true
+
+agent-platform:
+  persistence:
+    enabled: true
+  security:
+    enabled: true
+  cache:
+    type: caffeine
+
+management:
+  health:
+    nacos:
+      discovery:
+        enabled: true
+    nacos-config:
+      enabled: true
+
+logging:
+  level:
+    dev.hucoo: INFO

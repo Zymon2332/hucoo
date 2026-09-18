@@ -1,0 +1,34 @@
+services:
+  nacos:
+    image: nacos/nacos-server:v3.1.1
+    container_name: nacos
+    environment:
+      - MODE=standalone
+      - NACOS_AUTH_ENABLE=true
+      - NACOS_AUTH_TOKEN=your-secret-token-at-least-32-chars
+      - NACOS_AUTH_IDENTITY_KEY=serverIdentity
+      - NACOS_AUTH_IDENTITY_VALUE=security
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    volumes:
+      - ./nacos-data:/home/nacos/data
+
+  mysql:
+    image: mysql:8.4
+    container_name: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=hucoo_agent_platform
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
