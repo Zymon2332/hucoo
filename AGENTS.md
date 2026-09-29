@@ -34,6 +34,6 @@ Non-obvious conventions and gotchas:
 
 ## core/agent
 
-- Python `>=3.14` managed by uv (system `python3` is 3.11, too old): `cd core/agent && uv sync && uv run main.py`.
+- Python `>=3.11` managed by uv: `cd core/agent && uv sync && uv run main.py`. (Floor is 3.11, not lower: LangGraph's v3 streaming needs `asyncio` task-context propagation, gated to 3.11+.)
 - Run from `core/agent`: imports are top-level (`controller.api`, `domain.response`), no `src/` layout.
 - `main.py` calls `load_dotenv()`; `.env` holds `SERVICE_PORT` / `WORKERS` for uvicorn (default port 2000). Routes mount under `/agent/v1`; responses use `domain/response.py::ServiceResponse` + `constants/error_code.py::ErrorCode`.
