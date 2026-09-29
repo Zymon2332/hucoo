@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# Local environment
+.env
+
 # Jetbrains
 .idea
 .python-version
