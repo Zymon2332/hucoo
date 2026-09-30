@@ -2,3 +2,17 @@
 .worktrees/
 
 .opencode
+
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.tanstack/
+
+.env
+.env.local
+.env.*.local
+
+# TanStack Router generated
+apps/web/src/routeTree.gen.ts

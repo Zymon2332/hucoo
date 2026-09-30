@@ -1,9 +1,10 @@
 # AGENTS.md
 
-Monorepo with two real projects; the repo root has no build (root `Makefile` / `README.md` are empty stubs, `apps/web` is empty).
+Monorepo with three real projects; the repo root has no build (root `Makefile` / `README.md` are empty stubs).
 
 - `backend/` — Java 21 Maven multi-module Spring Boot 4 admin platform (24 modules). All Java work happens here.
 - `core/agent/` — Python FastAPI + LangChain/LangGraph agent service, uv-managed.
+- `apps/` — pnpm workspace for the frontend (`web` app + shared `packages/*`). Its workspace root (`package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `.npmrc`, `tsconfig.base.json`) lives in `apps/`, not the repo root.
 
 ## backend
 
@@ -37,3 +38,28 @@ Non-obvious conventions and gotchas:
 - Python `>=3.11` managed by uv: `cd core/agent && uv sync && uv run main.py`. (Floor is 3.11, not lower: LangGraph's v3 streaming needs `asyncio` task-context propagation, gated to 3.11+.)
 - Run from `core/agent`: imports are top-level (`controller.api`, `domain.response`), no `src/` layout.
 - `main.py` calls `load_dotenv()`; `.env` holds `SERVICE_PORT` / `WORKERS` for uvicorn (default port 2000). Routes mount under `/agent/v1`; responses use `domain/response.py::ServiceResponse` + `constants/error_code.py::ErrorCode`.
+
+## apps (frontend workspace)
+
+Commands (**run from `apps/`** — the pnpm workspace root, not the repo root):
+
+- `pnpm install` — install the workspace.
+- `pnpm dev` — Vite dev server (`@hucoo/web`, port 5173).
+- `pnpm -r typecheck` / `pnpm -r test` — all packages.
+- `pnpm --filter @hucoo/web build` — production build.
+- `pnpm check` — typecheck + test across the workspace.
+
+Structure:
+
+- `apps/web/` — Vite + React 19 + TanStack Router app (routes in `src/routes`, generated `src/routeTree.gen.ts`).
+- `apps/packages/ui` (`@hucoo/ui`) — shadcn/ui components + design tokens (`src/styles/globals.css`, green dual theme) + `cn`.
+- `apps/packages/streaming` (`@hucoo/streaming`) — SSE parser, `runReducer`, stream client (aligned with `core/agent`'s SSE contract), Zustand store.
+- `apps/packages/sdk` (`@hucoo/sdk`) — REST client unwrapping the backend `Result<T>`.
+- `apps/ui`, `apps/desktop`, `apps/prototype` — placeholder dirs, not workspace packages.
+
+Non-obvious conventions:
+
+- The frontend workspace root (`package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, `.npmrc`, `tsconfig.base.json`) lives in `apps/`, not the repo root; don't run pnpm from the repo root.
+- shadcn is configured with the Radix base (`components.json` in both `apps/web` and `apps/packages/ui`; `iconLibrary: lucide`). App-level icons use Phosphor; shadcn-generated components use lucide.
+- Tailwind v4: tokens/`@source` live in `apps/packages/ui/src/styles/globals.css`; it imports `shadcn/tailwind.css`.
+- Dev uses MSW to mock `POST /agent/v1/chat/stream` and `POST /api/v1/auth/login`; no backend needed. Demo login accepts any non-empty credentials.
