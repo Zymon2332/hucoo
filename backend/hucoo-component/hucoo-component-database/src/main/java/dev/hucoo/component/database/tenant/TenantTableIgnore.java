@@ -8,6 +8,12 @@ public final class TenantTableIgnore {
             "ap_tenant",
             "ap_dictionary",
             "ap_system_config",
+            "ap_auth_identity_user",
+            "ap_auth_login_identity",
+            "ap_auth_password_credential",
+            "ap_auth_tenant_membership",
+            "ap_auth_refresh_session",
+            "ap_auth_verification_challenge",
             "flyway_schema_history");
 
     private TenantTableIgnore() {

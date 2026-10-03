@@ -17,12 +17,16 @@ import tools.jackson.core.type.TypeReference;
 
 public class JwtUtil {
 
-    private static final String HEADER_JSON = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
-
     private final String secret;
+    private final String keyId;
 
     public JwtUtil(String secret) {
+        this(secret, "local-v1");
+    }
+
+    public JwtUtil(String secret, String keyId) {
         this.secret = StringUtil.defaultIfBlank(secret, "hucoo-agent-platform-local-secret-please-change");
+        this.keyId = StringUtil.defaultIfBlank(keyId, "local-v1");
     }
 
     public String createToken(String subject, Map<String, Object> claims, Duration ttl) {
@@ -35,7 +39,7 @@ public class JwtUtil {
         payload.put("iat", now);
         payload.put("exp", now + ttl.toSeconds());
 
-        String header = encode(HEADER_JSON);
+        String header = encode("{\"alg\":\"HS256\",\"typ\":\"JWT\",\"kid\":\"" + keyId + "\"}");
         String body = encode(JsonUtil.toJson(payload));
         String signature = sign(header + "." + body);
         return header + "." + body + "." + signature;

@@ -12,6 +12,8 @@ public enum CommonErrorCode implements ErrorCode {
     TOO_MANY_REQUESTS(429, "请求过于频繁", "platform"),
     INTERNAL_ERROR(500, "系统内部错误", "platform"),
     SERVICE_UNAVAILABLE(503, "下游服务不可用", "platform"),
+    IDEMPOTENCY_KEY_CONFLICT(400001, "幂等键与原请求不匹配", "platform"),
+    ASYNC_JOB_NOT_FOUND(400002, "异步任务不存在", "platform"),
 
     TENANT_NOT_FOUND(100001, "租户不存在", "tenant"),
     TENANT_DISABLED(100002, "租户已被禁用", "tenant"),
@@ -20,6 +22,15 @@ public enum CommonErrorCode implements ErrorCode {
     USER_NOT_FOUND(110001, "用户不存在", "identity"),
     USER_DISABLED(110002, "用户已被禁用", "identity"),
     API_KEY_INVALID(110003, "API Key 无效", "identity"),
+    AUTHENTICATION_FAILED(110004, "账号或凭证错误", "identity"),
+    AUTHENTICATION_METHOD_DISABLED(110005, "认证方式未启用", "identity"),
+    ACCOUNT_PENDING_ACTIVATION(110006, "账号尚未激活", "identity"),
+    VERIFICATION_CODE_INVALID(110007, "验证码错误或已过期", "identity"),
+    VERIFICATION_CODE_RATE_LIMITED(110008, "验证码发送过于频繁", "identity"),
+    REFRESH_TOKEN_INVALID(110009, "刷新令牌无效", "identity"),
+    REFRESH_TOKEN_REUSED(110010, "刷新令牌已被重复使用", "identity"),
+    TENANT_MEMBERSHIP_REQUIRED(110011, "用户尚未加入可访问的租户", "identity"),
+    AUTH_PROVIDER_UNAVAILABLE(110012, "认证提供方暂不可用", "identity"),
 
     MODEL_NOT_FOUND(120001, "模型不存在", "model-governance"),
     MODEL_ROUTE_FAILED(120002, "模型路由失败", "model-governance"),
@@ -42,7 +53,10 @@ public enum CommonErrorCode implements ErrorCode {
     ALERT_RULE_NOT_FOUND(190001, "告警规则不存在", "monitoring"),
 
     INTEGRATION_NOT_FOUND(200001, "集成应用不存在", "integration"),
-    INTEGRATION_CALLBACK_FAILED(200002, "集成回调失败", "integration");
+    INTEGRATION_CALLBACK_FAILED(200002, "集成回调失败", "integration"),
+
+    APPROVAL_NOT_FOUND(210001, "审批申请不存在", "identity"),
+    APPROVAL_STATE_CONFLICT(210002, "审批申请状态不允许该操作", "identity");
 
     private final int code;
     private final String message;

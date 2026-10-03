@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import dev.hucoo.identity.api.dto.UserAccountDTO;
 import dev.hucoo.identity.api.dto.UserAccountQueryRequest;
+import dev.hucoo.identity.api.dto.UserAccountOverviewDTO;
 import dev.hucoo.identity.application.converter.UserAccountConverter;
 import dev.hucoo.identity.application.service.UserAccountApplicationService;
 import dev.hucoo.identity.domain.entity.UserAccount;
@@ -144,6 +145,15 @@ public class MockUserAccountApplicationService extends ServiceImpl<UserAccountMa
                 request.resolvePageNum(), request.resolvePageSize()));
         return PageResult.of(page.getRecords().stream().map(userAccountConverter::toDto).toList(),
                 page.getTotal(), page.getCurrent(), page.getSize());
+    }
+
+    @Override
+    public UserAccountOverviewDTO overview(Long id) {
+        UserAccountOverviewDTO overview = new UserAccountOverviewDTO();
+        overview.setUser(getDto(id));
+        overview.setEffectivePermissions(List.of());
+        overview.setApprovalCount(0L);
+        return overview;
     }
 
 }

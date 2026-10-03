@@ -6,6 +6,7 @@ import dev.hucoo.identity.api.UserAccountFacade;
 import dev.hucoo.identity.api.dto.UserAccountCreateRequest;
 import dev.hucoo.identity.api.dto.UserAccountDTO;
 import dev.hucoo.identity.api.dto.UserAccountQueryRequest;
+import dev.hucoo.identity.api.dto.UserAccountOverviewDTO;
 import dev.hucoo.identity.application.converter.UserAccountConverter;
 import dev.hucoo.identity.domain.entity.UserAccount;
 import dev.hucoo.commons.dto.PageResult;
@@ -16,6 +17,15 @@ import com.baomidou.mybatisplus.spring.service.IService;
 public interface UserAccountApplicationService extends IService<UserAccount>, UserAccountFacade {
 
     UserAccountConverter converter();
+
+    @Override
+    default UserAccountOverviewDTO overview(Long id) {
+        UserAccountOverviewDTO overview = new UserAccountOverviewDTO();
+        overview.setUser(getDto(id));
+        overview.setEffectivePermissions(java.util.List.of());
+        overview.setApprovalCount(0L);
+        return overview;
+    }
 
     @Override
     default PageResult<UserAccountDTO> pageDtos(UserAccountQueryRequest request) {

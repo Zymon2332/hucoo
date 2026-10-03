@@ -22,15 +22,15 @@ spring:
       - optional:nacos:common.yml
   cloud:
     nacos:
-      server-addr: 127.0.0.1:8848
+      server-addr: 111.229.41.236:8848
       username: nacos
-      password: nacos
+      password: 123naco
       discovery:
-        namespace: public
+        namespace: ec193d05-b29c-4d7d-9261-56801a60cdc4
         group: DEFAULT_GROUP
         naming-cache-persist: true
       config:
-        namespace: public
+        namespace: ec193d05-b29c-4d7d-9261-56801a60cdc4
         group: DEFAULT_GROUP
         file-extension: yml
     openfeign:
@@ -42,10 +42,10 @@ spring:
             connect-timeout: 3000
             read-timeout: 5000
   datasource:
-    url: jdbc:h2:mem:hucoo_agent_platform;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
+    url: ${HUCOO_DB_URL:jdbc:postgresql://127.0.0.1:5432/hucoo_agent_platform}
+    driver-class-name: org.postgresql.Driver
+    username: ${HUCOO_DB_USERNAME:postgres}
+    password: ${HUCOO_DB_PASSWORD:postgres}
     hikari:
       pool-name: HucooAgentPlatformHikariPool
       maximum-pool-size: 10
@@ -84,6 +84,24 @@ agent-platform:
     enabled: false
   security:
     enabled: false
+    jwt-secret: ${HUCOO_JWT_SECRET:hucoo-agent-platform-local-secret-please-change}
+    jwt-key-id: ${HUCOO_JWT_KEY_ID:local-v1}
+    token-ttl-minutes: 20
+  authentication:
+    enabled: true
+    access-token-ttl-minutes: 20
+    refresh-token-ttl-days: 30
+    verification-code-ttl-seconds: 300
+    max-verification-attempts: 5
+    login-failure-threshold: 5
+    login-lock-minutes: 15
+    jwt-key-id: ${HUCOO_JWT_KEY_ID:local-v1}
+    providers:
+      password: true
+      sms: false
+      email: false
+      wechat: false
+      qq: false
   cache:
     type: caffeine
     ttl-minutes: 30
@@ -100,6 +118,8 @@ management:
     health:
       show-details: always
   health:
+    db:
+      enabled: false
     redis:
       enabled: false
   metrics:

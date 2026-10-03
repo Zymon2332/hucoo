@@ -6,10 +6,10 @@ spring:
       config:
         enabled: true
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/hucoo_agent_platform?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: root
+    url: ${HUCOO_DB_URL:jdbc:postgresql://127.0.0.1:5432/hucoo_agent_platform}
+    driver-class-name: org.postgresql.Driver
+    username: ${HUCOO_DB_USERNAME:postgres}
+    password: ${HUCOO_DB_PASSWORD:postgres}
   flyway:
     enabled: true
 
@@ -18,11 +18,29 @@ agent-platform:
     enabled: true
   security:
     enabled: true
+    jwt-secret: ${HUCOO_JWT_SECRET}
+    jwt-key-id: ${HUCOO_JWT_KEY_ID:prod-v1}
+  authentication:
+    enabled: true
+    access-token-ttl-minutes: 20
+    refresh-token-ttl-days: 30
+    verification-code-ttl-seconds: 300
+    login-failure-threshold: 5
+    login-lock-minutes: 15
+    jwt-key-id: ${HUCOO_JWT_KEY_ID:prod-v1}
+    providers:
+      password: true
+      sms: ${HUCOO_AUTH_SMS_ENABLED:false}
+      email: ${HUCOO_AUTH_EMAIL_ENABLED:false}
+      wechat: ${HUCOO_AUTH_WECHAT_ENABLED:false}
+      qq: ${HUCOO_AUTH_QQ_ENABLED:false}
   cache:
     type: caffeine
 
 management:
   health:
+    db:
+      enabled: true
     nacos:
       discovery:
         enabled: true
