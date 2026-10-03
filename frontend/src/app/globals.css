@@ -1,0 +1,222 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.75rem;
+
+  --background: #f3f4f6;
+  --foreground: #14181f;
+  --card: #ffffff;
+  --card-foreground: #14181f;
+  --popover: #ffffff;
+  --popover-foreground: #14181f;
+
+  --primary: #16a34a;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #1f2937;
+  --muted: #f4f5f7;
+  --muted-foreground: #6b7280;
+  --accent: #f4f5f7;
+  --accent-foreground: #14181f;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --info: #0284c7;
+  --info-foreground: #ffffff;
+
+  --border: #e8eaee;
+  --input: #e8eaee;
+  --ring: #16a34a;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #4b5563;
+  --sidebar-accent: #f4f5f7;
+  --sidebar-accent-foreground: #14181f;
+  --sidebar-border: #eef0f3;
+  --sidebar-ring: #16a34a;
+
+  /* 侧边栏宽度：展开态 184px（原 256px）/ 仅图标折叠态 64px（原 68px），移动端抽屉复用展开态。
+     固定用 px 而非 rem，避免根字号变化影响侧边栏宽度；如需微调只改这两个值即可 */
+  --sidebar-width: 184px;
+  --sidebar-width-collapsed: 64px;
+
+  --chart-1: #16a34a;
+  --chart-2: #0d9488;
+  --chart-3: #2563eb;
+  --chart-4: #d97706;
+  --chart-5: #7c3aed;
+  --chart-6: #0284c7;
+  --chart-7: #e11d48;
+}
+
+.dark {
+  --background: #0a0b0e;
+  --foreground: #e7eaf0;
+  --card: #131519;
+  --card-foreground: #e7eaf0;
+  --popover: #131519;
+  --popover-foreground: #e7eaf0;
+
+  --primary: #22c55e;
+  --primary-foreground: #04140a;
+  --secondary: #1d2026;
+  --secondary-foreground: #e7eaf0;
+  --muted: #1a1d23;
+  --muted-foreground: #9aa3b2;
+  --accent: #1d2026;
+  --accent-foreground: #e7eaf0;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #2b0808;
+  --success: #22c55e;
+  --success-foreground: #04170b;
+  --warning: #f59e0b;
+  --warning-foreground: #231302;
+  --info: #38bdf8;
+  --info-foreground: #04191e;
+
+  --border: #23272f;
+  --input: #262b34;
+  --ring: #22c55e;
+
+  --sidebar: #131519;
+  --sidebar-foreground: #9aa3b2;
+  --sidebar-accent: #1d2026;
+  --sidebar-accent-foreground: #e7eaf0;
+  --sidebar-border: #1f2329;
+  --sidebar-ring: #22c55e;
+
+  --chart-1: #4ade80;
+  --chart-2: #2dd4bf;
+  --chart-3: #60a5fa;
+  --chart-4: #fbbf24;
+  --chart-5: #a78bfa;
+  --chart-6: #38bdf8;
+  --chart-7: #fb7185;
+}
+
+@theme inline {
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, -apple-system, "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+  --font-display: var(--font-heading), var(--font-body), ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+
+  --radius-sm: calc(var(--radius) - 3px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-card: 0 1px 2px 0 rgb(16 24 40 / 0.04);
+  --shadow-raised: 0 16px 40px -16px rgb(16 24 40 / 0.22);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight;
+  }
+
+  ::selection {
+    @apply bg-primary/20;
+  }
+
+  :focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full border-2 border-transparent bg-clip-content;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility text-2xs {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+@utility num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}

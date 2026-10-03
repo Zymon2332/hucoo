@@ -1,0 +1,137 @@
+import type { StatusMeta, StatusTone } from "@/types/common";
+
+export const STATUS_META: Record<string, StatusMeta> = {
+  // 租户
+  active: { label: "正常", tone: "success" },
+  trial: { label: "试用中", tone: "info" },
+  suspended: { label: "已暂停", tone: "warning" },
+  expired: { label: "已过期", tone: "danger" },
+  provisioning: { label: "开通中", tone: "processing" },
+  archived: { label: "已归档", tone: "neutral" },
+  // 用户
+  invited: { label: "已邀请", tone: "info" },
+  pending: { label: "待处理", tone: "warning" },
+  disabled: { label: "已禁用", tone: "neutral" },
+  locked: { label: "已锁定", tone: "danger" },
+  // 审批
+  approved: { label: "已通过", tone: "success" },
+  rejected: { label: "已拒绝", tone: "danger" },
+  escalated: { label: "已升级", tone: "warning" },
+  cancelled: { label: "已取消", tone: "neutral" },
+  skipped: { label: "已跳过", tone: "neutral" },
+  // 状态通用
+  enabled: { label: "已启用", tone: "success" },
+  online: { label: "在线", tone: "success" },
+  healthy: { label: "健康", tone: "success" },
+  ready: { label: "可用", tone: "success" },
+  passed: { label: "通过", tone: "success" },
+  compliant: { label: "合规", tone: "success" },
+  verified: { label: "已验证", tone: "success" },
+  connected: { label: "已连接", tone: "success" },
+  success: { label: "成功", tone: "success" },
+  resolved: { label: "已恢复", tone: "success" },
+  paid: { label: "已支付", tone: "success" },
+  published: { label: "已上架", tone: "success" },
+  listed: { label: "已上架", tone: "success" },
+  operational: { label: "运行正常", tone: "success" },
+  "on-track": { label: "预算正常", tone: "success" },
+  running: { label: "运行中", tone: "processing" },
+  validating: { label: "验证中", tone: "processing" },
+  scanning: { label: "扫描中", tone: "processing" },
+  building: { label: "构建中", tone: "processing" },
+  rotating: { label: "轮换中", tone: "processing" },
+  "in-progress": { label: "发布中", tone: "processing" },
+  idle: { label: "空闲", tone: "neutral" },
+  draft: { label: "草稿", tone: "neutral" },
+  "in-review": { label: "审核中", tone: "info" },
+  "pending-review": { label: "待审核", tone: "warning" },
+  queued: { label: "排队中", tone: "neutral" },
+  pending_review: { label: "待审核", tone: "warning" },
+  stopped: { label: "已停止", tone: "neutral" },
+  offline: { label: "已下线", tone: "neutral" },
+  paused: { label: "已暂停", tone: "warning" },
+  maintenance: { label: "维护中", tone: "warning" },
+  silenced: { label: "已静默", tone: "neutral" },
+  acknowledged: { label: "已确认", tone: "info" },
+  degraded: { label: "降级", tone: "warning" },
+  vulnerable: { label: "存在漏洞", tone: "danger" },
+  beta: { label: "灰度中", tone: "info" },
+  gray: { label: "灰度发布", tone: "info" },
+  deprecated: { label: "已弃用", tone: "warning" },
+  error: { label: "异常", tone: "danger" },
+  failed: { label: "失败", tone: "danger" },
+  timeout: { label: "超时", tone: "warning" },
+  "rate-limited": { label: "已限流", tone: "warning" },
+  down: { label: "不可用", tone: "danger" },
+  outage: { label: "服务中断", tone: "danger" },
+  denied: { label: "已拒绝", tone: "danger" },
+  firing: { label: "告警中", tone: "danger" },
+  overdue: { label: "已逾期", tone: "danger" },
+  "over-budget": { label: "超预算", tone: "danger" },
+  exceeded: { label: "已超额", tone: "danger" },
+  warning: { label: "警告", tone: "warning" },
+  partial: { label: "部分合规", tone: "warning" },
+  "non-compliant": { label: "不合规", tone: "danger" },
+  "not-applicable": { label: "不适用", tone: "neutral" },
+  expiring: { label: "即将过期", tone: "warning" },
+  expired_key: { label: "已失效", tone: "danger" },
+  leaked: { label: "已泄露", tone: "danger" },
+  revoked: { label: "已撤销", tone: "neutral" },
+  blocked: { label: "已阻断", tone: "danger" },
+  unverified: { label: "未验证", tone: "warning" },
+  removed: { label: "已下架", tone: "neutral" },
+  failing: { label: "投递失败", tone: "danger" },
+  "rolled-back": { label: "已回滚", tone: "warning" },
+  completed: { label: "已完成", tone: "success" },
+  unknown: { label: "未知", tone: "neutral" },
+  open: { label: "开放", tone: "warning" },
+  allow: { label: "允许", tone: "success" },
+  deny: { label: "禁止", tone: "danger" },
+  ask: { label: "需确认", tone: "warning" },
+  block: { label: "阻断", tone: "danger" },
+  mask: { label: "脱敏", tone: "warning" },
+  warn: { label: "警告", tone: "warning" },
+  log: { label: "仅记录", tone: "info" },
+  flag: { label: "标记", tone: "info" },
+  ok: { label: "正常", tone: "success" },
+  slow: { label: "慢查询", tone: "warning" },
+  queued_scan: { label: "等待扫描", tone: "neutral" },
+  rotating_key: { label: "轮换中", tone: "processing" },
+  // 风险等级
+  low: { label: "低风险", tone: "success" },
+  medium: { label: "中风险", tone: "warning" },
+  high: { label: "高风险", tone: "danger" },
+  critical: { label: "严重风险", tone: "danger" },
+  // 票据
+  issued: { label: "已开具", tone: "info" },
+  void: { label: "已作废", tone: "neutral" },
+  // 账单
+  normal: { label: "正常", tone: "success" },
+};
+
+export const TONE_STYLE: Record<StatusTone, string> = {
+  success:
+    "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-400/20",
+  warning:
+    "bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-400/20",
+  danger:
+    "bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-400/20",
+  info: "bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-400/20",
+  neutral:
+    "bg-slate-100 text-slate-600 ring-slate-500/20 dark:bg-slate-500/10 dark:text-slate-400 dark:ring-slate-400/20",
+  processing:
+    "bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-500/10 dark:text-violet-400 dark:ring-violet-400/20",
+};
+
+export const TONE_DOT: Record<StatusTone, string> = {
+  success: "bg-emerald-500",
+  warning: "bg-amber-500",
+  danger: "bg-red-500",
+  info: "bg-blue-500",
+  neutral: "bg-slate-400",
+  processing: "bg-violet-500",
+};
+
+export function getStatusMeta(status: string): StatusMeta {
+  return STATUS_META[status] ?? { label: status, tone: "neutral" };
+}
