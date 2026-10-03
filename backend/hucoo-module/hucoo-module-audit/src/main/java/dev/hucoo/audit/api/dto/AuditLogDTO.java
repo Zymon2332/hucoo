@@ -18,4 +18,11 @@ public class AuditLogDTO extends BaseDTO {
     private String resourceId;
     private Integer result;
     private String clientIp;
+    private String traceId;
+    private String requestMethod;
+    private String requestUri;
+    private String operationName;
+    private Integer httpStatus;
+    private Long durationMs;
+    private String userAgent;
 }

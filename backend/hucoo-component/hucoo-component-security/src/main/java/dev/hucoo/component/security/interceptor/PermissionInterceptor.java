@@ -55,7 +55,10 @@ public class PermissionInterceptor implements HandlerInterceptor {
             CurrentUser currentUser = toCurrentUser(jwtUtil.parse(token));
             CurrentUserContext.set(currentUser);
             CurrentTenantContext.set(currentUser.tenantId());
+            request.setAttribute(PlatformConstants.CURRENT_USER_REQUEST_ATTRIBUTE, currentUser);
             assertTenantHeader(request, currentUser);
+            request.setAttribute(PlatformConstants.CURRENT_TENANT_REQUEST_ATTRIBUTE,
+                    CurrentTenantContext.getTenantId());
         }
         if (!properties.isEnabled()) {
             return true;

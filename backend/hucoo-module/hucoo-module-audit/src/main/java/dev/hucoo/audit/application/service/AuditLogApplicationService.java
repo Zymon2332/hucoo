@@ -3,7 +3,6 @@ package dev.hucoo.audit.application.service;
 import java.util.Map;
 
 import dev.hucoo.audit.api.AuditLogFacade;
-import dev.hucoo.audit.api.dto.AuditLogCreateRequest;
 import dev.hucoo.audit.api.dto.AuditLogDTO;
 import dev.hucoo.audit.api.dto.AuditLogQueryRequest;
 import dev.hucoo.audit.application.converter.AuditLogConverter;
@@ -31,29 +30,6 @@ public interface AuditLogApplicationService extends IService<AuditLog>, AuditLog
             throw new ResourceNotFoundException("AuditLog", id);
         }
         return converter().toDto(entity);
-    }
-
-    @Override
-    default AuditLogDTO create(AuditLogCreateRequest request) {
-        AuditLog entity = converter().toEntity(request);
-        save(entity);
-        return converter().toDto(entity);
-    }
-
-    @Override
-    default AuditLogDTO update(Long id, AuditLogCreateRequest request) {
-        AuditLog entity = getById(id);
-        if (entity == null) {
-            throw new ResourceNotFoundException("AuditLog", id);
-        }
-        converter().update(request, entity);
-        updateById(entity);
-        return converter().toDto(entity);
-    }
-
-    @Override
-    default boolean remove(Long id) {
-        return removeById(id);
     }
 
     Map<String, Object> statistics();

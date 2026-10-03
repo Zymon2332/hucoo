@@ -41,4 +41,22 @@ public class AuditLog extends BaseEntity {
     @TableField("data_scope")
     private String dataScope;
 
+    @TableField("request_method")
+    private String requestMethod;
+
+    @TableField("request_uri")
+    private String requestUri;
+
+    @TableField("operation_name")
+    private String operationName;
+
+    @TableField("http_status")
+    private Integer httpStatus;
+
+    @TableField("duration_ms")
+    private Long durationMs;
+
+    @TableField("user_agent")
+    private String userAgent;
+
 }

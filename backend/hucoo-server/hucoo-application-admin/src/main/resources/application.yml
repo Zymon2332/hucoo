@@ -107,6 +107,15 @@ agent-platform:
       email: false
       wechat: false
       qq: false
+  modules:
+    audit:
+      enabled: true
+      operation-log:
+        enabled: true
+        include-read-operations: false
+        retention-days: 180
+        queue-capacity: 10000
+        retention-cron: 0 0 3 * * *
   cache:
     type: caffeine
     ttl-minutes: 30

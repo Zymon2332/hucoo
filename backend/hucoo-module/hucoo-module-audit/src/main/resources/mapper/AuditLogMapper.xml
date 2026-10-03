@@ -7,4 +7,16 @@
         FROM ap_audit_log
         WHERE deleted = 0
     </select>
+
+    <delete id="deleteBefore">
+        DELETE FROM ap_audit_log
+        WHERE id IN (
+            SELECT id
+            FROM ap_audit_log
+            WHERE deleted = 0
+              AND created_at &lt; #{cutoff}
+            ORDER BY created_at
+            LIMIT #{limit}
+        )
+    </delete>
 </mapper>

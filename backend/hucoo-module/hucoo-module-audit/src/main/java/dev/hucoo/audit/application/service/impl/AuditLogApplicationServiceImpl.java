@@ -1,5 +1,6 @@
 package dev.hucoo.audit.application.service.impl;
 
+import java.io.Serializable;
 import java.util.Map;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -37,7 +38,7 @@ public class AuditLogApplicationServiceImpl extends ServiceImpl<AuditLogMapper, 
 
     @Override
     public PageResult<AuditLogDTO> pageDtos(AuditLogQueryRequest request) {
-        IPage<AuditLog> page = auditLogRepository.page(request.resolvePageNum(), request.resolvePageSize(), request.getKeyword());
+        IPage<AuditLog> page = auditLogRepository.page(request.resolvePageNum(), request.resolvePageSize(), request);
         return PageResult.of(page.getRecords().stream().map(auditLogConverter::toDto).toList(),
                 page.getTotal(), page.getCurrent(), page.getSize());
     }
@@ -45,6 +46,16 @@ public class AuditLogApplicationServiceImpl extends ServiceImpl<AuditLogMapper, 
     @Override
     public Map<String, Object> statistics() {
         return getBaseMapper().selectStatistics();
+    }
+
+    @Override
+    public boolean updateById(AuditLog entity) {
+        throw new UnsupportedOperationException("审计日志只允许追加写入");
+    }
+
+    @Override
+    public boolean removeById(Serializable id) {
+        throw new UnsupportedOperationException("审计日志只能由保留策略清理");
     }
 
 }

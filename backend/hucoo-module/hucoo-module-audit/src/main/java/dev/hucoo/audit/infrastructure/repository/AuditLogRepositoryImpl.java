@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
+import dev.hucoo.audit.api.dto.AuditLogQueryRequest;
 import dev.hucoo.audit.domain.entity.AuditLog;
 import dev.hucoo.audit.infrastructure.mapper.AuditLogMapper;
 import dev.hucoo.commons.util.StringUtil;
@@ -47,12 +48,45 @@ public class AuditLogRepositoryImpl implements AuditLogRepository {
     }
 
     @Override
-    public IPage<AuditLog> page(long pageNum, long pageSize, String keyword) {
+    public IPage<AuditLog> page(long pageNum, long pageSize, AuditLogQueryRequest request) {
         LambdaQueryWrapper<AuditLog> wrapper = new LambdaQueryWrapper<>();
-        if (StringUtil.isNotBlank(keyword)) {
-            wrapper.like(AuditLog::getOperatorName, keyword);
+        if (request.getOperatorId() != null) {
+            wrapper.eq(AuditLog::getOperatorId, request.getOperatorId());
         }
-        wrapper.orderByDesc(AuditLog::getOperatorName);
+        if (StringUtil.isNotBlank(request.getAction())) {
+            wrapper.eq(AuditLog::getAction, request.getAction());
+        }
+        if (StringUtil.isNotBlank(request.getResourceType())) {
+            wrapper.eq(AuditLog::getResourceType, request.getResourceType());
+        }
+        if (StringUtil.isNotBlank(request.getResourceId())) {
+            wrapper.eq(AuditLog::getResourceId, request.getResourceId());
+        }
+        if (request.getResult() != null) {
+            wrapper.eq(AuditLog::getResult, request.getResult());
+        }
+        if (request.getHttpStatus() != null) {
+            wrapper.eq(AuditLog::getHttpStatus, request.getHttpStatus());
+        }
+        if (StringUtil.isNotBlank(request.getRequestMethod())) {
+            wrapper.eq(AuditLog::getRequestMethod, request.getRequestMethod());
+        }
+        if (StringUtil.isNotBlank(request.getTraceId())) {
+            wrapper.eq(AuditLog::getTraceId, request.getTraceId());
+        }
+        if (request.getStartTime() != null) {
+            wrapper.ge(AuditLog::getCreatedAt, request.getStartTime());
+        }
+        if (request.getEndTime() != null) {
+            wrapper.le(AuditLog::getCreatedAt, request.getEndTime());
+        }
+        if (StringUtil.isNotBlank(request.getKeyword())) {
+            wrapper.and(query -> query.like(AuditLog::getOperatorName, request.getKeyword())
+                    .or().like(AuditLog::getAction, request.getKeyword())
+                    .or().like(AuditLog::getResourceId, request.getKeyword())
+                    .or().like(AuditLog::getRequestUri, request.getKeyword()));
+        }
+        wrapper.orderByDesc(AuditLog::getCreatedAt);
         return auditLogMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
     }
 

@@ -3,6 +3,7 @@ package dev.hucoo.audit.infrastructure.repository;
 import java.util.List;
 import java.util.Optional;
 
+import dev.hucoo.audit.api.dto.AuditLogQueryRequest;
 import dev.hucoo.audit.domain.entity.AuditLog;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 
@@ -18,7 +19,7 @@ public interface AuditLogRepository {
 
     boolean removeById(Long id);
 
-    IPage<AuditLog> page(long pageNum, long pageSize, String keyword);
+    IPage<AuditLog> page(long pageNum, long pageSize, AuditLogQueryRequest request);
 
     long count();
 }
