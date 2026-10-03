@@ -30,6 +30,10 @@
         </dependency>
         <dependency>
             <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-module-model-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
             <artifactId>hucoo-module-tool-mcp</artifactId>
         </dependency>
         <dependency>

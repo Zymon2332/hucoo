@@ -37,6 +37,12 @@ spring:
                 - Path=/api/admin/**
               filters:
                 - AddResponseHeader=X-Gateway-Node, hucoo-gateway-server
+            - id: model-runtime-route
+              uri: lb://hucoo-model-runtime
+              predicates:
+                - Path=/api/model/**
+              filters:
+                - AddResponseHeader=X-Gateway-Node, hucoo-gateway-server
           httpclient:
             connect-timeout: 3000
             response-timeout: 10s

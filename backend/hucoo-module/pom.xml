@@ -17,6 +17,7 @@
         <module>hucoo-module-tenant</module>
         <module>hucoo-module-identity</module>
         <module>hucoo-module-model-governance</module>
+        <module>hucoo-module-model-runtime</module>
         <module>hucoo-module-tool-mcp</module>
         <module>hucoo-module-agent</module>
         <module>hucoo-module-project</module>

@@ -16,6 +16,7 @@
     <modules>
         <module>hucoo-application-admin</module>
         <module>hucoo-gateway-server</module>
+        <module>hucoo-model-runtime-server</module>
     </modules>
 
     <properties>

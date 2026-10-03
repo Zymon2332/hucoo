@@ -1,0 +1,55 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: hucoo-model-runtime
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration
+  profiles:
+    active: dev
+  config:
+    import:
+      - optional:nacos:hucoo-model-runtime.yml
+      - optional:nacos:common.yml
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+      discovery:
+        enabled: ${NACOS_DISCOVERY_ENABLED:false}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: DEFAULT_GROUP
+      config:
+        enabled: ${NACOS_CONFIG_ENABLED:false}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: DEFAULT_GROUP
+        file-extension: yml
+  data:
+    redis:
+      host: ${HUCOO_REDIS_HOST:127.0.0.1}
+      port: ${HUCOO_REDIS_PORT:6379}
+
+agent-platform:
+  model-runtime:
+    enabled: true
+    persistence-enabled: false
+    max-attempts: 3
+    connect-timeout: 2s
+    response-timeout: 30s
+    stream-idle-timeout: 60s
+    route-cache-ttl: 30s
+    circuit-failure-threshold: 5
+    circuit-window-seconds: 60
+    circuit-open-seconds: 30
+    low-balance-factor: 0.5
+    default-weight: 1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
