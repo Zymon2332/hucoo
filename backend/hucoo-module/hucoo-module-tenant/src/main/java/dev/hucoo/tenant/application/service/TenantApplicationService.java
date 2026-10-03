@@ -6,6 +6,7 @@ import dev.hucoo.tenant.api.TenantFacade;
 import dev.hucoo.tenant.api.dto.TenantCreateRequest;
 import dev.hucoo.tenant.api.dto.TenantDTO;
 import dev.hucoo.tenant.api.dto.TenantQueryRequest;
+import dev.hucoo.tenant.api.dto.TenantOverviewDTO;
 import dev.hucoo.tenant.application.converter.TenantConverter;
 import dev.hucoo.tenant.domain.entity.Tenant;
 import dev.hucoo.commons.dto.PageResult;
@@ -57,6 +58,28 @@ public interface TenantApplicationService extends IService<Tenant>, TenantFacade
     }
 
     Map<String, Object> statistics();
+
+    @Override
+    default TenantOverviewDTO overview(Long id) {
+        TenantOverviewDTO overview = new TenantOverviewDTO();
+        overview.setTenant(getDto(id));
+        overview.setUserCount(countUsers(id));
+        overview.setOrganizationCount(countOrganizations(id));
+        overview.setActiveUserCount(countActiveUsers(id));
+        return overview;
+    }
+
+    default long countUsers(Long id) {
+        return 0L;
+    }
+
+    default long countOrganizations(Long id) {
+        return 0L;
+    }
+
+    default long countActiveUsers(Long id) {
+        return 0L;
+    }
 
     @Override
     default Class<Tenant> getEntityClass() {

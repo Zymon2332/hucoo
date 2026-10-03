@@ -87,6 +87,11 @@ agent-platform:
     jwt-secret: ${HUCOO_JWT_SECRET:hucoo-agent-platform-local-secret-please-change}
     jwt-key-id: ${HUCOO_JWT_KEY_ID:local-v1}
     token-ttl-minutes: 20
+  swagger:
+    enabled: true
+    title: Hucoo Agent Platform Admin API
+    description: Agent 平台管理端接口文档
+    version: v1
   authentication:
     enabled: true
     access-token-ttl-minutes: 20
@@ -132,10 +137,12 @@ management:
 
 springdoc:
   swagger-ui:
+    enabled: ${agent-platform.swagger.enabled:true}
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
   api-docs:
+    enabled: ${agent-platform.swagger.enabled:true}
     path: /v3/api-docs
 
 logging:

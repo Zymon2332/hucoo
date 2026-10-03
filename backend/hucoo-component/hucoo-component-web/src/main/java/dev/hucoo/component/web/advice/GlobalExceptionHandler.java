@@ -28,9 +28,11 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(BusinessException.class)
-    public Result<Void> handleBusinessException(BusinessException ex) {
+    public ResponseEntity<Result<Void>> handleBusinessException(BusinessException ex) {
         log.warn("business exception: code={}, module={}, message={}", ex.getCode(), ex.getModule(), ex.getMessage());
-        return Result.<Void>fail(ex.getCode(), ex.getMessage()).withTraceId(org.slf4j.MDC.get(PlatformConstants.TRACE_ID_MDC_KEY));
+        return ResponseEntity.status(resolveHttpStatus(ex.getCode()))
+                .body(Result.<Void>fail(ex.getCode(), ex.getMessage())
+                        .withTraceId(org.slf4j.MDC.get(PlatformConstants.TRACE_ID_MDC_KEY)));
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
@@ -72,6 +74,19 @@ public class GlobalExceptionHandler {
     private Result<Void> badRequest(String message) {
         return Result.<Void>fail(CommonErrorCode.BAD_REQUEST.getCode(), message)
                 .withTraceId(org.slf4j.MDC.get(PlatformConstants.TRACE_ID_MDC_KEY));
+    }
+
+    private HttpStatus resolveHttpStatus(int code) {
+        return switch (code) {
+            case 400 -> HttpStatus.BAD_REQUEST;
+            case 401 -> HttpStatus.UNAUTHORIZED;
+            case 403 -> HttpStatus.FORBIDDEN;
+            case 404, 400002, 210001 -> HttpStatus.NOT_FOUND;
+            case 409, 400001, 210002 -> HttpStatus.CONFLICT;
+            case 429 -> HttpStatus.TOO_MANY_REQUESTS;
+            case 503 -> HttpStatus.SERVICE_UNAVAILABLE;
+            default -> HttpStatus.BAD_REQUEST;
+        };
     }
 
     private String describeFieldError(FieldError fieldError) {

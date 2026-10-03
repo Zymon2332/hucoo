@@ -35,4 +35,10 @@ public class AuditLog extends BaseEntity {
     @TableField("client_ip")
     private String clientIp;
 
+    @TableField("trace_id")
+    private String traceId;
+
+    @TableField("data_scope")
+    private String dataScope;
+
 }

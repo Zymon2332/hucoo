@@ -7,6 +7,8 @@ public final class PlatformConstants {
     public static final String DEFAULT_OPERATOR = "system";
     public static final String TRACE_ID_HEADER = "X-Trace-Id";
     public static final String TRACE_ID_MDC_KEY = "traceId";
+    public static final String REQUEST_ID_HEADER = "X-Request-Id";
+    public static final String IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
     public static final String TENANT_ID_HEADER = "X-Tenant-Id";
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String BEARER_PREFIX = "Bearer ";

@@ -15,6 +15,7 @@
 
     <modules>
         <module>hucoo-component-web</module>
+        <module>hucoo-component-swagger</module>
         <module>hucoo-component-security</module>
         <module>hucoo-component-cache</module>
         <module>hucoo-component-database</module>

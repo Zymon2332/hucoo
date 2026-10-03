@@ -35,4 +35,7 @@ public abstract class BaseEntity implements Serializable {
     @Version
     @TableField(fill = FieldFill.INSERT)
     private Integer version;
+
+    @TableField(fill = FieldFill.INSERT)
+    private String tenantId;
 }

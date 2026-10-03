@@ -25,7 +25,6 @@
         <module>hucoo-module-security</module>
         <module>hucoo-module-monitoring</module>
         <module>hucoo-module-integration</module>
-        <module>hucoo-module-tool-mcp</module>
     </modules>
 
     <properties>

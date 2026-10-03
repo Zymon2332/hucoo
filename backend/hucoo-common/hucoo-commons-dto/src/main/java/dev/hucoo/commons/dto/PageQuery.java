@@ -11,12 +11,12 @@ public class PageQuery implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private Long pageNum;
+    private Long page;
     private Long pageSize;
     private String keyword;
 
     public long resolvePageNum() {
-        return pageNum == null || pageNum < 1 ? 1L : pageNum;
+        return page == null || page < 1 ? 1L : page;
     }
 
     public long resolvePageSize() {

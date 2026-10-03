@@ -5,12 +5,15 @@ import dev.hucoo.commons.dto.PageResult;
 import dev.hucoo.tenant.api.dto.TenantCreateRequest;
 import dev.hucoo.tenant.api.dto.TenantDTO;
 import dev.hucoo.tenant.api.dto.TenantQueryRequest;
+import dev.hucoo.tenant.api.dto.TenantOverviewDTO;
 
 public interface TenantFacade extends ModuleFacade {
 
     PageResult<TenantDTO> pageDtos(TenantQueryRequest request);
 
     TenantDTO getDto(Long id);
+
+    TenantOverviewDTO overview(Long id);
 
     TenantDTO create(TenantCreateRequest request);
 

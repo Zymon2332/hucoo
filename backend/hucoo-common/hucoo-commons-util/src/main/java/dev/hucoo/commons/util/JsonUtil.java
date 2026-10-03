@@ -15,6 +15,7 @@ public final class JsonUtil {
     private static final Logger log = LoggerFactory.getLogger(JsonUtil.class);
 
     private static final JsonMapper MAPPER = JsonMapper.builder()
+            .addModule(PlatformJacksonModule.create())
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
 

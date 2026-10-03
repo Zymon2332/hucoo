@@ -17,19 +17,19 @@ public class PageResult<T> implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private List<T> records;
+    private List<T> items;
     private long total;
-    private long pageNum;
+    private long page;
     private long pageSize;
     private long pages;
 
-    public static <T> PageResult<T> of(List<T> records, long total, long pageNum, long pageSize) {
+    public static <T> PageResult<T> of(List<T> items, long total, long page, long pageSize) {
         long effectivePageSize = pageSize > 0 ? pageSize : total;
         long pages = effectivePageSize > 0 ? (total + effectivePageSize - 1) / effectivePageSize : 0L;
-        return new PageResult<>(records, total, pageNum, pageSize, pages);
+        return new PageResult<>(items, total, page, pageSize, pages);
     }
 
-    public static <T> PageResult<T> empty(long pageNum, long pageSize) {
-        return new PageResult<>(Collections.emptyList(), 0L, pageNum, pageSize, 0L);
+    public static <T> PageResult<T> empty(long page, long pageSize) {
+        return new PageResult<>(Collections.emptyList(), 0L, page, pageSize, 0L);
     }
 }

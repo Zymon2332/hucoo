@@ -46,86 +46,88 @@
 ## 三、项目结构（Maven 多模块）
 
 ```text
-agent-platform/
-├── pom.xml
-├── mvnw / mvnw.cmd / .mvn/
+hucoo-agent-platform/
+├── pom.xml                         # 根 Maven 聚合与依赖管理
+├── mvnw / mvnw.cmd / .mvn/         # Maven Wrapper
 ├── docker-compose.yml
-├── commons/
-│   ├── commons-api/
-│   ├── commons-dto/
-│   ├── commons-util/
-│   └── commons-exception/
-├── dependencies/
-│   └── dependencies-bom/
-├── components/
-│   ├── component-web/
-│   ├── component-security/
-│   ├── component-cache/
-│   ├── component-database/
-│   ├── component-observability/
-│   └── component-test/
-├── middleware/
-│   └── gateway-server/
-├── modules/
-│   ├── module-tenant/
-│   ├── module-identity/
-│   ├── module-model-governance/
-│   ├── module-tool-mcp/
-│   ├── module-agent/
-│   ├── module-project/
-│   ├── module-billing/
-│   ├── module-audit/
-│   ├── module-security/
-│   ├── module-monitoring/
-│   └── module-integration/
-└── application/
-    └── application-admin/
+├── hucoo-dependencies-bom/          # 统一依赖版本管理
+├── hucoo-common/
+│   ├── hucoo-commons-api/
+│   ├── hucoo-commons-dto/
+│   ├── hucoo-commons-util/
+│   └── hucoo-commons-exception/
+├── hucoo-component/
+│   ├── hucoo-component-web/
+│   ├── hucoo-component-security/
+│   ├── hucoo-component-cache/
+│   ├── hucoo-component-database/
+│   ├── hucoo-component-observability/
+│   └── hucoo-component-test/
+├── hucoo-module/
+│   ├── hucoo-module-tenant/
+│   ├── hucoo-module-identity/
+│   ├── hucoo-module-model-governance/
+│   ├── hucoo-module-tool-mcp/
+│   ├── hucoo-module-agent/
+│   ├── hucoo-module-project/
+│   ├── hucoo-module-billing/
+│   ├── hucoo-module-audit/
+│   ├── hucoo-module-security/
+│   ├── hucoo-module-monitoring/
+│   └── hucoo-module-integration/
+└── hucoo-server/
+    ├── hucoo-application-admin/     # 管理端应用启动器
+    └── hucoo-gateway-server/        # WebFlux 网关
 ```
 
 依赖流向：
 
 ```text
-application → modules → middleware → components → commons → dependencies
+hucoo-application-admin → hucoo-module-* → hucoo-component-* → hucoo-commons-*
+hucoo-gateway-server → hucoo-commons-*
 ```
 
-禁止反向依赖，禁止跨业务模块直接依赖。
+`hucoo-dependencies-bom` 只负责统一版本管理，不参与业务代码依赖。禁止反向依赖，禁止跨业务模块直接依赖。
 
 各模块职责：
 
-- `commons-api`：通用接口定义、常量、枚举、错误码、基础接口
-- `commons-dto`：通用 DTO、BaseDTO、PageResult、统一响应 Result
-- `commons-util`：工具类：JSON、日期、加密、ID 生成、字符串
-- `commons-exception`：全局异常定义、业务异常、错误码体系
-- `dependencies-bom`：统一依赖版本管理
-- `component-web`：全局异常处理、统一响应包装、跨域、请求日志、参数校验
-- `component-security`：JWT 解析、权限拦截器、当前用户上下文
-- `component-cache`：Redis / Caffeine 抽象、缓存注解
-- `component-database`：MyBatis-Plus 自动配置、BaseEntity、MetaObjectHandler、多租户
-- `component-observability`：Micrometer、Trace ID、Actuator 扩展
-- `component-test`：测试基础类、Testcontainers 配置、Mock 工具
-- `gateway-server`：Spring Cloud Gateway 网关，注册到 Nacos
-- `module-tenant`：租户管理、组织管理、租户级策略开关
-- `module-identity`：用户、角色、权限、SSO、API Key、审批流
-- `module-model-governance`：平台模型、自定义模型、BYOK 密钥、模型路由、验证
-- `module-tool-mcp`：工具目录、MCP Server 注册审核、网络策略、工具市场
-- `module-agent`：Agent 模板、版本、市场审核、策略限制
-- `module-project`：项目模板、工作区策略、仓库绑定、环境变量
-- `module-billing`：用量统计、配额、套餐、账单、成本中心
-- `module-audit`：审计日志、数据保留、DLP、合规
-- `module-security`：安全策略、IP 白名单、DLP 规则、内容审核
-- `module-monitoring`：告警规则、通知渠道、SLA、健康检查
-- `module-integration`：Git、IM、CI/CD、Webhook、OAuth 应用
-- `application-admin`：Spring Boot 启动器，聚合所有模块
+- `hucoo-commons-api`：通用接口定义、常量、枚举、错误码、基础接口
+- `hucoo-commons-dto`：通用 DTO、BaseDTO、PageResult、统一响应 Result
+- `hucoo-commons-util`：工具类：JSON、日期、加密、ID 生成、字符串
+- `hucoo-commons-exception`：全局异常定义、业务异常、错误码体系
+- `hucoo-component-web`：全局异常处理、统一响应包装、跨域、请求日志、参数校验
+- `hucoo-component-security`：JWT 解析、权限拦截器、当前用户上下文
+- `hucoo-component-cache`：Redis / Caffeine 抽象、缓存注解
+- `hucoo-component-database`：MyBatis-Plus 自动配置、BaseEntity、MetaObjectHandler、多租户
+- `hucoo-component-observability`：Micrometer、Trace ID、Actuator 扩展
+- `hucoo-component-test`：测试基础类、Testcontainers 配置、Mock 工具
+- `hucoo-gateway-server`：Spring Cloud Gateway 网关，注册到 Nacos
+- `hucoo-module-tenant`：租户管理、组织管理、租户级策略开关
+- `hucoo-module-identity`：用户、角色、权限、SSO、API Key、审批流
+- `hucoo-module-model-governance`：平台模型、自定义模型、BYOK 密钥、模型路由、验证
+- `hucoo-module-tool-mcp`：工具目录、MCP Server 注册审核、网络策略、工具市场
+- `hucoo-module-agent`：Agent 模板、版本、市场审核、策略限制
+- `hucoo-module-project`：项目模板、工作区策略、仓库绑定、环境变量
+- `hucoo-module-billing`：用量统计、配额、套餐、账单、成本中心
+- `hucoo-module-audit`：审计日志、数据保留、DLP、合规
+- `hucoo-module-security`：安全策略、IP 白名单、DLP 规则、内容审核
+- `hucoo-module-monitoring`：告警规则、通知渠道、SLA、健康检查
+- `hucoo-module-integration`：Git、IM、CI/CD、Webhook、OAuth 应用
+- `hucoo-application-admin`：Spring Boot 管理端启动器，聚合业务模块
 
 每个业务模块的内部结构（DDD 分层）：
 
 ```text
-module-xxx/
+hucoo-module-xxx/
 ├── pom.xml
-└── src/main/java/com/agentplatform/xxx/
-    ├── api/              # 对外接口、Facade 契约、DTO
-    ├── application/      # 应用服务、用例编排
+└── src/main/java/dev/hucoo/<module-package>/
+    ├── api/              # 对外 Facade 契约、DTO
+    │   └── dto/
+    ├── application/      # 应用服务、用例编排、转换器
+    │   ├── converter/
+    │   └── service/
     ├── domain/           # 领域模型、聚合、领域服务
+    │   └── entity/
     ├── infrastructure/   # 仓储实现（MyBatis-Plus Mapper）、外部适配器
     │   ├── mapper/       # MyBatis-Plus Mapper 接口（继承 BaseMapper）
     │   └── repository/   # 仓储接口实现（调用 Mapper）
@@ -135,7 +137,7 @@ module-xxx/
     └── mapper/           # MyBatis XML 映射文件（按需）
 ```
 
-包名：`com.agentplatform.<module>`
+包名：`dev.hucoo.<module-package>`，例如 `dev.hucoo.tenant`、`dev.hucoo.modelgovernance`。
 
 ## 四、关键设计决策
 
@@ -267,7 +269,7 @@ MCP 分四层：
 - Actuator：`/actuator/health`
 - 端口：Nacos `8848`，Gateway `8080`，Admin `8081`
 
-Docker Compose 包含 Nacos 3.1.1、MySQL 8.4、Redis 7.4。
+Docker Compose 包含 Nacos 3.1.1、PostgreSQL 16、Redis 7.4。
 
 ## 七、重要禁止事项
 

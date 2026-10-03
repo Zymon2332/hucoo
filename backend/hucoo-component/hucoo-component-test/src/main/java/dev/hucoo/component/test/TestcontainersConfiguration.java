@@ -1,21 +1,21 @@
 package dev.hucoo.component.test;
 
-import org.testcontainers.mysql.MySQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 public final class TestcontainersConfiguration {
 
-    public static final String MYSQL_IMAGE = "mysql:8.4";
+    public static final String POSTGRES_IMAGE = "postgres:16-alpine";
 
-    private static final MySQLContainer MYSQL = new MySQLContainer("mysql:8.4")
+    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(POSTGRES_IMAGE)
             .withDatabaseName("hucoo_agent_platform");
 
     private TestcontainersConfiguration() {
     }
 
-    public static MySQLContainer mysql() {
-        if (!MYSQL.isRunning()) {
-            MYSQL.start();
+    public static PostgreSQLContainer postgres() {
+        if (!POSTGRES.isRunning()) {
+            POSTGRES.start();
         }
-        return MYSQL;
+        return POSTGRES;
     }
 }

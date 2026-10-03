@@ -6,7 +6,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -14,13 +14,13 @@ import org.testcontainers.mysql.MySQLContainer;
 public abstract class BaseIntegrationTest {
 
     @Container
-    protected static final MySQLContainer MYSQL = TestcontainersConfiguration.mysql();
+    protected static final PostgreSQLContainer POSTGRES = TestcontainersConfiguration.postgres();
 
     @DynamicPropertySource
     static void datasourceProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("agent-platform.persistence.enabled", () -> "true");
     }
 }

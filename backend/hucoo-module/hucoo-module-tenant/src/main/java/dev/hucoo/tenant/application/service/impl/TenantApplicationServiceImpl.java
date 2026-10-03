@@ -1,6 +1,5 @@
 package dev.hucoo.tenant.application.service.impl;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -8,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import dev.hucoo.tenant.api.dto.TenantDTO;
 import dev.hucoo.tenant.api.dto.TenantQueryRequest;
+import dev.hucoo.tenant.api.dto.TenantOverviewDTO;
 import dev.hucoo.tenant.application.converter.TenantConverter;
 import dev.hucoo.tenant.application.service.TenantApplicationService;
 import dev.hucoo.tenant.domain.entity.Tenant;
@@ -46,6 +46,22 @@ public class TenantApplicationServiceImpl extends ServiceImpl<TenantMapper, Tena
     @Override
     public Map<String, Object> statistics() {
         return getBaseMapper().selectStatistics();
+    }
+
+    @Override
+    public TenantOverviewDTO overview(Long id) {
+        TenantOverviewDTO overview = new TenantOverviewDTO();
+        overview.setTenant(getDto(id));
+        Map<String, Object> stats = getBaseMapper().selectOverviewStats(id);
+        overview.setUserCount(number(stats, "user_count"));
+        overview.setOrganizationCount(number(stats, "organization_count"));
+        overview.setActiveUserCount(number(stats, "active_user_count"));
+        return overview;
+    }
+
+    private long number(Map<String, Object> values, String key) {
+        Object value = values == null ? null : values.get(key);
+        return value instanceof Number number ? number.longValue() : 0L;
     }
 
 }

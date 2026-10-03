@@ -32,7 +32,7 @@ Agent 平台管理端后端的 Maven 多模块骨架：Nacos 服务发现 + 配�
 hucoo-agent-platform/
 ├── pom.xml                       # 父 POM：聚合模块 + BOM + 编译插件统一管理
 ├── mvnw / mvnw.cmd / .mvn/       # Maven Wrapper 3.9.9
-├── docker-compose.yml            # Nacos 3.1.1 + MySQL 8.4 + Redis 7.4
+├── docker-compose.yml            # Nacos 3.1.1 + PostgreSQL 16 + Redis 7.4
 ├── dependencies/
 │   └── hucoo-dependencies-bom/         # 对外发布用 BOM（导入 Boot/Cloud/Alibaba/MyBatis-Plus BOM）
 ├── commons/
@@ -102,7 +102,7 @@ application → modules → middleware → components → commons → dependenci
 | Nacos Server | 8848（控制台 http://127.0.0.1:8848/nacos），gRPC 9848 |
 | hucoo-gateway-server | 8080 |
 | hucoo-application-admin | 8081 |
-| MySQL | 3306 |
+| PostgreSQL | 5432 |
 | Redis | 6379 |
 
 ## 4. 快速开始
@@ -116,7 +116,7 @@ application → modules → middleware → components → commons → dependenci
 ### 4.2 启动 Nacos（可选，不启动也能跑 Mock 模式）
 
 ```bash
-docker compose up -d nacos          # MySQL / Redis 同理：docker compose up -d
+docker compose up -d nacos          # PostgreSQL / Redis 同理：docker compose up -d
 ```
 
 控制台：http://127.0.0.1:8848/nacos （默认 nacos/nacos）。
@@ -165,9 +165,9 @@ spring:
 
 | Profile | Nacos 注册 | 数据源 | 持久层 |
 |---|---|---|---|
-| dev（默认） | 关闭（可离线启动） | H2 内存 | Mock 数据 |
-| test | 关闭 | H2 内存 | Mock 数据 |
-| prod | 开启 | MySQL 8.4 | MyBatis-Plus + Flyway |
+| dev（默认） | 关闭（可离线启动） | PostgreSQL | Mock 数据 |
+| test | 关闭 | PostgreSQL（Testcontainers 集成测试） | Mock 数据 |
+| prod | 开启 | PostgreSQL 16 | MyBatis-Plus + Flyway |
 
 不同环境也可通过 Nacos 的 namespace 隔离。
 
@@ -251,7 +251,7 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 ```
 
-- 分页：`PaginationInnerInterceptor(DbType.MYSQL)`（单页上限 500）
+- 分页：`PaginationInnerInterceptor(DbType.POSTGRE_SQL)`（单页上限 500）
 - 乐观锁：`@Version` + `OptimisticLockerInnerInterceptor`
 - 多租户：`TenantLineInnerInterceptor` + `CurrentTenantContext`（`ap_tenant`、`flyway_schema_history` 等表通过 `TenantTableIgnore` 忽略）
 - 自动填充：`@TableField(fill = FieldFill.INSERT / INSERT_UPDATE)` + `DefaultMetaObjectHandler`（替代 JPA Auditing）
@@ -266,7 +266,7 @@ mybatis-plus:
 
 ## 6. 切换真实数据库
 
-1. 启动 MySQL：`docker compose up -d mysql`
+1. 启动 PostgreSQL：`docker compose up -d postgres`
 2. 使用 `prod` profile 启动：`--spring.profiles.active=prod`
 3. Flyway 会执行 `db/migration/V1__init_schema.sql` 建表
 4. `agent-platform.persistence.enabled=true` 后，各模块的 `XxxApplicationServiceImpl`（DB 版）生效，`MockXxxApplicationService` 自动失效
@@ -281,7 +281,7 @@ mybatis-plus:
 - `hucoo-commons-util`：JsonUtil / IdGenerator / StringUtil 单元测试
 - `hucoo-module-tenant`：MapStruct Converter 单元测试
 - `hucoo-application-admin`：`@SpringBootTest` + MockMvc 上下文测试（校验统一响应、Actuator、OpenAPI）
-- `hucoo-component-test` 提供 `BaseUnitTest` / `BaseIntegrationTest` / `TestcontainersConfiguration`（MySQL 8.4，需要本地 Docker）
+- `hucoo-component-test` 提供 `BaseUnitTest` / `BaseIntegrationTest` / `TestcontainersConfiguration`（PostgreSQL 16，需要本地 Docker）
 
 ## 8. 生产部署提示
 

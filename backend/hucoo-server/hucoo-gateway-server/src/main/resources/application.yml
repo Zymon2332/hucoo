@@ -12,15 +12,15 @@ spring:
       - optional:nacos:common.yml
   cloud:
     nacos:
-      server-addr: 127.0.0.1:8848
+      server-addr: 111.229.41.236:8848
       username: nacos
-      password: nacos
+      password: 123naco
       discovery:
-        namespace: public
+        namespace: ec193d05-b29c-4d7d-9261-56801a60cdc4
         group: DEFAULT_GROUP
         naming-cache-persist: true
       config:
-        namespace: public
+        namespace: ec193d05-b29c-4d7d-9261-56801a60cdc4
         group: DEFAULT_GROUP
         file-extension: yml
     gateway:

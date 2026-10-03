@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -21,6 +22,7 @@ import dev.hucoo.component.security.config.SecurityProperties;
 import dev.hucoo.component.security.context.CurrentUser;
 import dev.hucoo.component.security.context.CurrentUserContext;
 import dev.hucoo.component.security.util.JwtUtil;
+import dev.hucoo.component.database.tenant.CurrentTenantContext;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,10 +35,14 @@ public class PermissionInterceptor implements HandlerInterceptor {
 
     private final SecurityProperties properties;
     private final JwtUtil jwtUtil;
+    private final ObjectProvider<PermissionResolver> permissionResolver;
 
-    public PermissionInterceptor(SecurityProperties properties, JwtUtil jwtUtil) {
+    public PermissionInterceptor(SecurityProperties properties,
+                                 JwtUtil jwtUtil,
+                                 ObjectProvider<PermissionResolver> permissionResolver) {
         this.properties = properties;
         this.jwtUtil = jwtUtil;
+        this.permissionResolver = permissionResolver;
     }
 
     @Override
@@ -46,7 +52,10 @@ public class PermissionInterceptor implements HandlerInterceptor {
         }
         String token = resolveToken(request);
         if (token != null) {
-            CurrentUserContext.set(toCurrentUser(jwtUtil.parse(token)));
+            CurrentUser currentUser = toCurrentUser(jwtUtil.parse(token));
+            CurrentUserContext.set(currentUser);
+            CurrentTenantContext.set(currentUser.tenantId());
+            assertTenantHeader(request, currentUser);
         }
         if (!properties.isEnabled()) {
             return true;
@@ -65,13 +74,26 @@ public class PermissionInterceptor implements HandlerInterceptor {
         if (user == null) {
             throw new BusinessException(CommonErrorCode.UNAUTHORIZED);
         }
+        PermissionResolver resolver = permissionResolver.getIfAvailable(PermissionResolver::jwtClaimsOnly);
         for (String permission : requirePermission.value()) {
-            if (!user.hasPermission(permission)) {
+            if (!resolver.hasPermission(user, permission)) {
                 log.warn("permission denied: user={}, required={}", user.username(), permission);
                 throw new BusinessException(CommonErrorCode.FORBIDDEN, "缺少权限: " + permission);
             }
         }
         return true;
+    }
+
+    private void assertTenantHeader(HttpServletRequest request, CurrentUser user) {
+        String requestedTenant = request.getHeader(PlatformConstants.TENANT_ID_HEADER);
+        if (StringUtil.isBlank(requestedTenant) || requestedTenant.equals(user.tenantId())) {
+            return;
+        }
+        if (PlatformConstants.SYSTEM_TENANT_ID.equals(user.tenantId()) && user.hasPermission("tenant:switch")) {
+            CurrentTenantContext.set(requestedTenant);
+            return;
+        }
+        throw new BusinessException(CommonErrorCode.FORBIDDEN, "不能访问其他租户数据");
     }
 
     @Override
@@ -80,6 +102,7 @@ public class PermissionInterceptor implements HandlerInterceptor {
                                 Object handler,
                                 Exception ex) {
         CurrentUserContext.clear();
+        CurrentTenantContext.clear();
     }
 
     private boolean isIgnored(String uri) {

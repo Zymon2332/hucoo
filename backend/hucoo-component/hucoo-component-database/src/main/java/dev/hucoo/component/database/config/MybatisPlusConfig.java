@@ -30,7 +30,7 @@ public class MybatisPlusConfig {
     public MybatisPlusInterceptor mybatisPlusInterceptor() {
         MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
 
-        PaginationInnerInterceptor pagination = new PaginationInnerInterceptor(DbType.MYSQL);
+        PaginationInnerInterceptor pagination = new PaginationInnerInterceptor(DbType.POSTGRE_SQL);
         pagination.setMaxLimit(MAX_PAGE_LIMIT);
         pagination.setOverflow(false);
         interceptor.addInnerInterceptor(pagination);

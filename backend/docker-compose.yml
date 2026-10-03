@@ -14,16 +14,17 @@ services:
     volumes:
       - ./nacos-data:/home/nacos/data
 
-  mysql:
-    image: mysql:8.4
-    container_name: mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=hucoo_agent_platform
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=hucoo_agent_platform
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - ./mysql-data:/var/lib/mysql
+      - ./postgres-data:/var/lib/postgresql/data
 
   redis:
     image: redis:7.4-alpine

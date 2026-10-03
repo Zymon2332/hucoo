@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import dev.hucoo.tenant.api.dto.TenantDTO;
 import dev.hucoo.tenant.api.dto.TenantQueryRequest;
+import dev.hucoo.tenant.api.dto.TenantOverviewDTO;
 import dev.hucoo.tenant.application.converter.TenantConverter;
 import dev.hucoo.tenant.application.service.TenantApplicationService;
 import dev.hucoo.tenant.domain.entity.Tenant;
@@ -153,6 +154,16 @@ public class MockTenantApplicationService extends ServiceImpl<TenantMapper, Tena
         statistics.put("total", store.size());
         statistics.put("mock", Boolean.TRUE);
         return statistics;
+    }
+
+    @Override
+    public TenantOverviewDTO overview(Long id) {
+        TenantOverviewDTO overview = new TenantOverviewDTO();
+        overview.setTenant(getDto(id));
+        overview.setUserCount(0L);
+        overview.setOrganizationCount(0L);
+        overview.setActiveUserCount(0L);
+        return overview;
     }
 
 }
