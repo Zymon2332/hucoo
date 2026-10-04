@@ -93,9 +93,14 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!--
+            Spring Boot 4 把 Flyway 自动配置拆到独立的 spring-boot-flyway 模块，
+            只引 flyway-core 不会有任何自动配置，spring.flyway.* 属性全部静默失效、
+            迁移不会执行。必须用 starter 引入自动配置。
+        -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
