@@ -16,6 +16,10 @@
     <description>项目模板、工作区策略、仓库绑定与环境变量</description>
 
     <dependencies>
+                <dependency>
+                    <groupId>io.swagger.core.v3</groupId>
+                    <artifactId>swagger-annotations-jakarta</artifactId>
+                </dependency>
         <dependency>
             <groupId>dev.hucoo</groupId>
             <artifactId>hucoo-commons-api</artifactId>

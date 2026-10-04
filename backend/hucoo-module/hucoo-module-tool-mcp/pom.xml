@@ -16,6 +16,10 @@
     <description>工具目录、MCP Server 注册审核与网络策略</description>
 
     <dependencies>
+                <dependency>
+                    <groupId>io.swagger.core.v3</groupId>
+                    <artifactId>swagger-annotations-jakarta</artifactId>
+                </dependency>
         <dependency>
             <groupId>dev.hucoo</groupId>
             <artifactId>hucoo-commons-api</artifactId>

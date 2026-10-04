@@ -16,6 +16,10 @@
     <description>租户、组织与租户级策略</description>
 
     <dependencies>
+                <dependency>
+                    <groupId>io.swagger.core.v3</groupId>
+                    <artifactId>swagger-annotations-jakarta</artifactId>
+                </dependency>
         <dependency>
             <groupId>dev.hucoo</groupId>
             <artifactId>hucoo-commons-api</artifactId>

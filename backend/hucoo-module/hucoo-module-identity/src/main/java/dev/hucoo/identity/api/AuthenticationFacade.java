@@ -2,6 +2,10 @@ package dev.hucoo.identity.api;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.ser.std.ToStringSerializer;
+
 import dev.hucoo.commons.api.ModuleFacade;
 import dev.hucoo.identity.api.dto.AuthLoginRequest;
 import dev.hucoo.identity.api.dto.AuthOAuthAuthorizeResponse;
@@ -41,7 +45,10 @@ public interface AuthenticationFacade extends ModuleFacade {
 
     void activate(Long userId, String tenantId);
 
-    record AuthRegisterResult(Long userId, String username, String status) {
+    /** userId 序列化为字符串，避免前端 JavaScript 精度丢失。 */
+    record AuthRegisterResult(@Schema(type = "string", description = "字符串形式的雪花 ID") @JsonSerialize(using = ToStringSerializer.class) Long userId,
+                              String username,
+                              String status) {
     }
 
     @Override

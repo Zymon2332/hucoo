@@ -16,6 +16,10 @@
     <description>用户、角色、权限、SSO 与 API Key</description>
 
     <dependencies>
+                <dependency>
+                    <groupId>io.swagger.core.v3</groupId>
+                    <artifactId>swagger-annotations-jakarta</artifactId>
+                </dependency>
         <dependency>
             <groupId>dev.hucoo</groupId>
             <artifactId>hucoo-commons-api</artifactId>
