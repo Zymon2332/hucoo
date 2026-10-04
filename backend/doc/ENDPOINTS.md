@@ -2,7 +2,7 @@
 
 > 本文件由 `doc/openapi.json` 生成，请勿手工编辑；变更接口后先跑 `./scripts/export-openapi.sh` 再提交。
 
-接口总数 **215**，路径 **143** 条，资源分组 **28** 个。
+接口总数 **227**，路径 **155** 条，资源分组 **29** 个。
 所有路径前缀为 `/api/admin/v1`，响应统一为 `Result<T>` 信封（见 [API_CONTRACT.md](API_CONTRACT.md)）。
 
 ## Agent 模板
@@ -247,6 +247,23 @@
 | `GET` | `/api/admin/v1/organizations/{id}` | 查询组织详情 |
 | `PATCH` | `/api/admin/v1/organizations/{id}` |  |
 | `PUT` | `/api/admin/v1/organizations/{id}` | 更新组织 |
+
+## 统一认证
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/admin/v1/auth/admin/users/{userId}/activate` | 管理员激活用户并加入租户 |
+| `POST` | `/api/admin/v1/auth/login` | 登录 |
+| `POST` | `/api/admin/v1/auth/logout` | 退出当前会话 |
+| `GET` | `/api/admin/v1/auth/me` | 当前用户 |
+| `GET` | `/api/admin/v1/auth/oauth/{provider}/authorize` | 获取第三方登录授权地址 |
+| `POST` | `/api/admin/v1/auth/oauth/{provider}/callback` | 处理第三方登录回调 |
+| `GET` | `/api/admin/v1/auth/providers` | 查询可用认证方式 |
+| `POST` | `/api/admin/v1/auth/refresh` | 刷新访问令牌 |
+| `POST` | `/api/admin/v1/auth/register` | 注册待激活账号 |
+| `GET` | `/api/admin/v1/auth/sessions` | 查询当前用户会话 |
+| `DELETE` | `/api/admin/v1/auth/sessions/{sessionId}` | 撤销当前用户的指定会话 |
+| `POST` | `/api/admin/v1/auth/verification-codes` | 发送验证码 |
 
 ## 角色管理
 

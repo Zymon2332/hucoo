@@ -80,13 +80,17 @@
   脚本通过 `OpenApiContractExportTests` 在 `test` profile 下导出（关闭 Nacos 与安全拦截、Mock 持久化），无需外部依赖。
   `doc/openapi.json` 可提交并可在 `git diff` 中审阅接口变更，前端据此生成类型即可，不需要人工同步字段。
 
-当前基线：OpenAPI `3.1.0`，143 条路径 / 215 个操作 / 138 个 schema。
+当前基线：OpenAPI `3.1.0`，155 条路径 / 227 个操作 / 158 个 schema。
+契约内容与运行中的服务 `GET /v3/api-docs` 经过逐路径与逐 schema 比对，保持一致。
 
 ### 前端消费要点
 
 - 所有响应都是 `Result<T>` 信封，业务数据在 `data`，不要直接读取顶层字段；`code === 200` 才是成功。
 - 分页统一为 `data: { items, total, page, pageSize, pages }`，请求参数为 `page`（从 1 开始）与 `pageSize`。
-- 认证：`POST /api/admin/v1/auth/login` 获取令牌，后续请求携带 `Authorization: Bearer <accessToken>`。
+- 认证：`POST /api/admin/v1/auth/login` 获取令牌，后续请求携带 `Authorization: Bearer <accessToken>`；
+  令牌失效用 `POST /api/admin/v1/auth/refresh` 刷新，当前用户用 `GET /api/admin/v1/auth/me`。
+- 错误响应保留业务错误码在 `code`，HTTP 状态码表达语义（`401` 凭证无效、`403` 无权限、`404` 资源不存在、
+  `409` 冲突、`429` 过于频繁），前端可同时依据二者分流处理。
 - `agent-platform.security.enabled=false`（dev 默认）时后端不做鉴权拦截，前端联调不受阻，但不要据此判断线上行为。
 - 写接口可携带 `Idempotency-Key` 请求头做幂等重放。
 - 耗时操作返回 `Result<AsyncJobDTO>`，用 `GET /api/admin/v1/jobs/{jobId}` 轮询。
@@ -100,10 +104,36 @@
 | 健康检查 | `http://localhost:8081/actuator/health` |
 | 契约 | `http://localhost:8081/v3/api-docs` |
 
-CORS 由 `hucoo-component-web` 的 `WebMvcConfig` 统一放开（`allowedOriginPatterns("*")`），前端本地端口无需额外配置。
+CORS 由 `hucoo-component-web` 的 `WebMvcConfig` 统一放开（`allowedOriginPatterns("*")`），
+预检放行 `content-type`、`authorization`、`idempotency-key` 等请求头并暴露 `X-Trace-Id`，前端本地端口无需额外配置。
+
+本地联调使用 `test` profile 即可零外部依赖启动：
+
+```bash
+cd backend
+./mvnw -pl hucoo-server/hucoo-application-admin spring-boot:run -Dspring-boot.run.profiles=test
+```
+
+### Mock 模式内置账号
+
+`agent-platform.persistence.enabled=false` 时由 `MockAuthenticationApplicationService` 提供认证能力，
+用于本地联调，账号保存在内存中、重启即失效：
+
+| 账号 | 密码 | 说明 |
+| --- | --- | --- |
+| `admin` | `Admin@12345` | 平台管理员，令牌带 `permissions: ["*"]`，可访问全部接口 |
+| `operator` | `Admin@12345` | 运营人员，权限同 `admin` |
+
+- 注册接口在 Mock 模式下注册即激活，无需管理员审批，可直接登录。
+- Mock 只实现了 `PASSWORD` 方式；`SMS`、`EMAIL`、`WECHAT`、`QQ` 会返回 `110005 认证方式未启用`，
+  `GET /api/admin/v1/auth/providers` 会如实反映。
+- `POST /api/admin/v1/auth/verification-codes` 返回 `110005`，Mock 未实现验证码发送。
 
 ### 已知边界
 
 - 契约中包含一个非管理端前缀的端点 `POST /api/model/v1/chat/completions`（标签“模型运行时”），属于用户端模型调用入口，由 `hucoo-application-admin` 通过 `hucoo-module-model-runtime` 一并暴露。
 - `hucoo-module-model-runtime` 未列入 `AdminApplication.scanBasePackages`，其组件经 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 注册。
 - `dev` profile 下 `agent-platform.security.enabled=false`，该端点无鉴权拦截。
+- **经网关访问会 404**：`hucoo-gateway-server` 同时配置了 `Path=/api/admin/**` 与全局 `StripPrefix=2`，
+  会把 `/api/admin/v1/auth/login` 改写成 `/v1/auth/login` 再转发，而管理端只注册了 `/api/admin/v1/**`。
+  本地联调请直连 `http://localhost:8081`；若要走网关，需要调整该路由的前缀剥离层数。
