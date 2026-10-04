@@ -49,6 +49,7 @@ export interface DataTableProps<TData> {
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: React.ReactNode;
+  /** 每页条数：非服务端模式下作为初始值，服务端模式下为受控值 */
   pageSize?: number;
   onRowClick?: (row: TData) => void;
   getRowId?: (row: TData) => string;
@@ -57,6 +58,20 @@ export interface DataTableProps<TData> {
   showColumnToggle?: boolean;
   showSearch?: boolean;
   className?: string;
+  /**
+   * 服务端分页模式：传入 `total` 与 `onPageChange` 后，DataTable 不再使用内置的
+   * `getPaginationRowModel`，分页状态完全由调用方（通常是后端返回的 page/pageSize/total）驱动。
+   */
+  total?: number;
+  page?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  /**
+   * 服务端搜索模式：传入 `onSearchChange` 后，搜索框变为受控组件，
+   * 关键字交给后端（`globalFilter` 不再对当前页做本地过滤）。
+   */
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 export function DataTable<TData>({
@@ -70,7 +85,6 @@ export function DataTable<TData>({
   emptyTitle,
   emptyDescription,
   emptyAction,
-  pageSize = 10,
   onRowClick,
   getRowId,
   rowClassName,
@@ -78,11 +92,30 @@ export function DataTable<TData>({
   showColumnToggle = true,
   showSearch = true,
   className,
+  total,
+  page,
+  pageSize: controlledPageSize = 10,
+  onPageChange,
+  onPageSizeChange,
+  searchValue,
+  onSearchChange,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({});
   const [globalFilter, setGlobalFilter] = React.useState("");
+  const [pagination, setPagination] = React.useState({
+    pageIndex: 0,
+    pageSize: controlledPageSize,
+  });
+
+  const manualPagination = total !== undefined && typeof onPageChange === "function";
+  const manualFiltering = typeof onSearchChange === "function";
+  const searchTerm = manualFiltering ? (searchValue ?? "") : globalFilter;
+  const effectivePageSize = manualPagination ? controlledPageSize : pagination.pageSize;
+  const paginationState = manualPagination
+    ? { pageIndex: Math.max(0, (page ?? 1) - 1), pageSize: effectivePageSize }
+    : pagination;
 
   const selectionColumn = React.useMemo<ColumnDef<TData, unknown>>(
     () => ({
@@ -120,28 +153,52 @@ export function DataTable<TData>({
     [columns, enableRowSelection, selectionColumn],
   );
 
-  const globalFilterFn = React.useCallback((row: Row<TData>, _columnId: string, filterValue: unknown) => {
-    const needle = String(filterValue ?? "").trim().toLowerCase();
-    if (!needle) return true;
-    return JSON.stringify(row.original).toLowerCase().includes(needle);
-  }, []);
+  const globalFilterFn = React.useCallback(
+    (row: Row<TData>, _columnId: string, filterValue: unknown) => {
+      const needle = String(filterValue ?? "")
+        .trim()
+        .toLowerCase();
+      if (!needle) return true;
+      return JSON.stringify(row.original).toLowerCase().includes(needle);
+    },
+    [],
+  );
 
   const table = useReactTable({
     data,
     columns: tableColumns,
-    state: { sorting, columnVisibility, rowSelection, globalFilter },
+    state: {
+      sorting,
+      columnVisibility,
+      rowSelection,
+      ...(manualFiltering ? {} : { globalFilter }),
+      ...(manualPagination ? { pagination: paginationState } : {}),
+    },
     enableRowSelection,
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onGlobalFilterChange: setGlobalFilter,
+    ...(manualFiltering ? {} : { onGlobalFilterChange: setGlobalFilter }),
+    onPaginationChange: manualPagination
+      ? (updater) => {
+          const next = typeof updater === "function" ? updater(paginationState) : updater;
+          if (next.pageSize !== paginationState.pageSize) onPageSizeChange?.(next.pageSize);
+          if (next.pageIndex !== paginationState.pageIndex) onPageChange?.(next.pageIndex + 1);
+        }
+      : setPagination,
     globalFilterFn,
+    manualPagination,
+    manualFiltering,
+    pageCount: manualPagination
+      ? Math.max(1, Math.ceil((total ?? 0) / Math.max(1, effectivePageSize)))
+      : undefined,
+    rowCount: manualPagination ? (total ?? 0) : undefined,
     getRowId: getRowId ? (row) => getRowId(row) : undefined,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize } },
+    getPaginationRowModel: manualPagination ? undefined : getPaginationRowModel(),
+    initialState: { pagination: { pageSize: controlledPageSize } },
   });
 
   const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original);
@@ -152,8 +209,10 @@ export function DataTable<TData>({
       <div className="flex flex-wrap items-center gap-2">
         {showSearch ? (
           <SearchInput
-            value={globalFilter}
-            onChange={setGlobalFilter}
+            value={searchTerm}
+            onChange={
+              manualFiltering ? (onSearchChange as (value: string) => void) : setGlobalFilter
+            }
             placeholder={searchPlaceholder}
             className="w-full sm:w-64"
           />
@@ -161,7 +220,7 @@ export function DataTable<TData>({
         {toolbar}
         <div className="ml-auto flex items-center gap-1.5">
           {enableRowSelection && selectedRows.length > 0 && bulkActions ? (
-            <div className="mr-1 flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2 py-1">
+            <div className="border-primary/30 bg-primary/5 mr-1 flex items-center gap-1.5 rounded-md border px-2 py-1">
               <span className="num text-2xs font-medium">已选 {selectedRows.length} 项</span>
               {bulkActions(selectedRows, () => table.resetRowSelection())}
               <Button
@@ -178,8 +237,7 @@ export function DataTable<TData>({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="text-2xs">
-                  <Columns3 />
-                  列
+                  <Columns3 />列
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
@@ -195,7 +253,9 @@ export function DataTable<TData>({
                       onCheckedChange={(value) => column.toggleVisibility(value === true)}
                       onSelect={(event) => event.preventDefault()}
                     >
-                      {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
+                      {typeof column.columnDef.header === "string"
+                        ? column.columnDef.header
+                        : column.id}
                     </DropdownMenuCheckboxItem>
                   ))}
               </DropdownMenuContent>
@@ -204,7 +264,7 @@ export function DataTable<TData>({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="border-border bg-card overflow-hidden rounded-xl border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -213,7 +273,10 @@ export function DataTable<TData>({
                   const canSort = header.column.getCanSort();
                   const sorted = header.column.getIsSorted();
                   return (
-                    <TableHead key={header.id} style={{ width: header.getSize() === 150 ? undefined : header.getSize() }}>
+                    <TableHead
+                      key={header.id}
+                      style={{ width: header.getSize() === 150 ? undefined : header.getSize() }}
+                    >
                       {header.isPlaceholder ? null : canSort ? (
                         <button
                           type="button"
@@ -249,10 +312,10 @@ export function DataTable<TData>({
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={tableColumns.length} className="p-0">
                   <EmptyState
-                    title={emptyTitle ?? (globalFilter ? "没有匹配的记录" : "暂无数据")}
+                    title={emptyTitle ?? (searchTerm ? "没有匹配的记录" : "暂无数据")}
                     description={
                       emptyDescription ??
-                      (globalFilter
+                      (searchTerm
                         ? "尝试更换关键词或清空筛选条件。"
                         : "还没有任何记录，创建第一条数据后这里会显示列表。")
                     }
@@ -283,11 +346,15 @@ export function DataTable<TData>({
 
       {showPagination ? (
         <Pagination
-          page={pageIndex + 1}
-          pageSize={table.getState().pagination.pageSize}
-          total={table.getFilteredRowModel().rows.length}
-          onPageChange={(nextPage) => table.setPageIndex(nextPage - 1)}
-          onPageSizeChange={(nextSize) => table.setPageSize(nextSize)}
+          page={manualPagination ? (page ?? 1) : pageIndex + 1}
+          pageSize={effectivePageSize}
+          total={manualPagination ? (total ?? 0) : table.getFilteredRowModel().rows.length}
+          onPageChange={(nextPage) =>
+            manualPagination ? onPageChange?.(nextPage) : table.setPageIndex(nextPage - 1)
+          }
+          onPageSizeChange={
+            manualPagination ? onPageSizeChange : (nextSize) => table.setPageSize(nextSize)
+          }
         />
       ) : null}
     </div>
