@@ -1,5 +1,6 @@
 package dev.hucoo.component.web.advice;
 
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -26,6 +27,14 @@ import jakarta.validation.ConstraintViolationException;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /** 凭证类错误码：语义为“未认证/凭证失效”，统一映射 401。 */
+    private static final Set<Integer> UNAUTHORIZED_CODES = Set.of(
+            CommonErrorCode.API_KEY_INVALID.getCode(),
+            CommonErrorCode.AUTHENTICATION_FAILED.getCode(),
+            CommonErrorCode.VERIFICATION_CODE_INVALID.getCode(),
+            CommonErrorCode.REFRESH_TOKEN_INVALID.getCode(),
+            CommonErrorCode.REFRESH_TOKEN_REUSED.getCode());
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Result<Void>> handleBusinessException(BusinessException ex) {
@@ -77,6 +86,9 @@ public class GlobalExceptionHandler {
     }
 
     private HttpStatus resolveHttpStatus(int code) {
+        if (UNAUTHORIZED_CODES.contains(code)) {
+            return HttpStatus.UNAUTHORIZED;
+        }
         return switch (code) {
             case 400 -> HttpStatus.BAD_REQUEST;
             case 401 -> HttpStatus.UNAUTHORIZED;
@@ -85,6 +97,10 @@ public class GlobalExceptionHandler {
             case 409, 400001, 210002 -> HttpStatus.CONFLICT;
             case 429 -> HttpStatus.TOO_MANY_REQUESTS;
             case 503 -> HttpStatus.SERVICE_UNAVAILABLE;
+            // 各业务模块的“资源不存在 / 账号不可用”错误码，按接口契约映射到语义一致的 HTTP 状态，
+            // 不能统一落到 400，否则前端无法区分“凭证错误”和“参数不合法”。
+            case 100001, 120001, 130001, 140001, 150001, 170001, 190001, 200001 -> HttpStatus.NOT_FOUND;
+            case 100002, 110002, 110006, 140002 -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.BAD_REQUEST;
         };
     }
