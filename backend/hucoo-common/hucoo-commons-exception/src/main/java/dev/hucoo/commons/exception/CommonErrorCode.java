@@ -10,6 +10,7 @@ public enum CommonErrorCode implements ErrorCode {
     METHOD_NOT_ALLOWED(405, "请求方法不支持", "platform"),
     CONFLICT(409, "数据冲突", "platform"),
     TOO_MANY_REQUESTS(429, "请求过于频繁", "platform"),
+    PAYLOAD_TOO_LARGE(413, "上传内容超过大小限制", "platform"),
     INTERNAL_ERROR(500, "系统内部错误", "platform"),
     SERVICE_UNAVAILABLE(503, "下游服务不可用", "platform"),
     IDEMPOTENCY_KEY_CONFLICT(400001, "幂等键与原请求不匹配", "platform"),
@@ -56,7 +57,21 @@ public enum CommonErrorCode implements ErrorCode {
     INTEGRATION_CALLBACK_FAILED(200002, "集成回调失败", "integration"),
 
     APPROVAL_NOT_FOUND(210001, "审批申请不存在", "identity"),
-    APPROVAL_STATE_CONFLICT(210002, "审批申请状态不允许该操作", "identity");
+    APPROVAL_STATE_CONFLICT(210002, "审批申请状态不允许该操作", "identity"),
+
+    FILE_NOT_FOUND(220001, "文件不存在", "file"),
+    FILE_TOO_LARGE(220002, "文件超过大小限制", "file"),
+    FILE_TYPE_NOT_ALLOWED(220003, "文件类型不允许上传", "file"),
+    FILE_UPLOAD_SESSION_NOT_FOUND(220004, "上传会话不存在或已过期", "file"),
+    FILE_UPLOAD_INCOMPLETE(220005, "上传分片不完整", "file"),
+    FILE_STORAGE_ERROR(220006, "文件存储操作失败", "file"),
+    FILE_STORAGE_CONFIG_NOT_FOUND(220007, "存储配置不存在", "file"),
+    FILE_STORAGE_UNAVAILABLE(220008, "文件存储不可用", "file"),
+    FILE_QUOTA_EXCEEDED(220009, "文件配额已超限", "file"),
+    FILE_SHARE_EXPIRED(220010, "分享链接已失效", "file"),
+    FILE_OPERATION_NOT_ALLOWED(220011, "当前文件状态不允许该操作", "file"),
+    FILE_STORAGE_CAPABILITY_UNSUPPORTED(220012, "当前存储驱动不支持该能力", "file"),
+    FILE_QUARANTINED(220013, "文件未通过安全检查，暂不可下载", "file");
 
     private final int code;
     private final String message;
