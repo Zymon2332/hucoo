@@ -20,6 +20,7 @@
         <module>hucoo-component-cache</module>
         <module>hucoo-component-database</module>
         <module>hucoo-component-observability</module>
+        <module>hucoo-component-storage</module>
         <module>hucoo-component-test</module>
     </modules>
 

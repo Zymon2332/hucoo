@@ -46,6 +46,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>bom</artifactId>
+                <version>${aws-sdk-java.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
             <dependency>
                 <groupId>dev.hucoo</groupId>
@@ -90,6 +97,11 @@
             <dependency>
                 <groupId>dev.hucoo</groupId>
                 <artifactId>hucoo-component-observability</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-component-storage</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

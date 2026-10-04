@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>dev.hucoo</groupId>
+        <artifactId>hucoo-component</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>hucoo-component-storage</artifactId>
+    <name>hucoo-component-storage</name>
+    <description>Object storage auto configuration: S3 compatible (RustFS/MinIO/OSS) and local filesystem</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-commons-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-commons-exception</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-commons-util</artifactId>
+        </dependency>
+
+        <!-- S3 兼容对象存储（RustFS / MinIO / AWS S3 / OSS 共用同一套客户端） -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <!-- 只用同步客户端 + Apache HTTP 客户端，异步客户端的 netty 依赖树不需要 -->
+            <exclusions>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>netty-nio-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>apache-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-component-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
