@@ -2,7 +2,13 @@
 
 ## JSON 序列化
 
-- 所有资源主键字段 `id` 使用字符串，避免 JavaScript 精度丢失。
+- 所有资源主键字段 `id` 以及各类 `*Id` 关联字段（`userId`、`ownerId`、`applicantId` 等）使用字符串，
+  避免 JavaScript 精度丢失。雪花 ID 为 19 位长整型，超过 `Number.MAX_SAFE_INTEGER`。
+- 实现上需同时声明两个注解，缺一不可：
+  - `@JsonSerialize(using = ToStringSerializer.class)` —— 决定运行时实际序列化；
+  - `@Schema(type = "string")` —— 决定 springdoc 生成的契约类型。
+  springdoc 不解析 `@JsonSerialize`，只写前者会导致契约声明为 integer 而运行时返回字符串。
+  `BaseDTO.id` 已统一处理，继承它的实体 DTO 无需重复声明；自带 `*Id` 字段的 DTO 需逐个声明。
 - `createdAt`、`updatedAt` 及其他时间字段使用 ISO 8601 字符串，例如 `2026-10-02T17:30:45`。
 - 金额字段使用 JSON 数字，保持十进制表示，不使用科学计数法；金额单位通过同级 `currency` 字段声明。
 - 百分比字段使用 `0` 到 `100` 的 JSON 数字，不带 `%` 后缀；字段名使用 `*Percent` 或在接口说明中明确单位。
