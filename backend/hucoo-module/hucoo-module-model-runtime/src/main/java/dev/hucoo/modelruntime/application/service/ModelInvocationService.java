@@ -252,10 +252,15 @@ public class ModelInvocationService implements ModelRuntimeFacade {
                 .failedRequests(a.getFailedRequests().get()).cooldownUntil(a.getCooldownUntil()).build();
     }
 
-    private String trimSlash(String endpoint) { return endpoint == null ? null : endpoint.replaceAll("/+$", ""); }
+    private String trimSlash(String endpoint) {
+        return endpoint == null ? null : endpoint.replaceAll("/+$", "");
+    }
 
     private String sha256(String value) {
-        try { return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8))); }
-        catch (Exception e) { return "unknown"; }
+        try {
+            return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            return "unknown";
+        }
     }
 }

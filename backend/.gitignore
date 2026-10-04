@@ -3,6 +3,9 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Maven flatten plugin (generated, do not commit) ###
+.flattened-pom.xml
+
 ### IntelliJ IDEA ###
 .idea/
 *.iws
