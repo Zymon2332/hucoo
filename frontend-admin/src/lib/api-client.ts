@@ -109,6 +109,17 @@ async function send<T>(path: string, options: RequestOptions, allowRetry: boolea
   return (envelope ? envelope.data : undefined) as T;
 }
 
+/**
+ * 写操作幂等键（后端十分钟窗口内复用首次成功响应）。
+ *
+ * 优先用 Web Crypto；非安全上下文（如局域网 http 调试）下 `crypto.randomUUID` 不可用，
+ * 退化成一个时间戳 + 随机串，仍然满足「同一操作不重复提交」的需要。
+ */
+export function createIdempotencyKey(): string {
+  if (typeof globalThis.crypto?.randomUUID === "function") return globalThis.crypto.randomUUID();
+  return `idem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 /** 统一请求入口：成功返回信封里的 `data`，失败抛 {@link ApiError}。 */
 export function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   return send<T>(path, options, true);

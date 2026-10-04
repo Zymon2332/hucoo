@@ -2,9 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   Building2,
@@ -19,32 +16,6 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { PageContainer, PageHeader } from "@/components/common/page-header";
 import { StatCard, StatCardGrid } from "@/components/common/stat-card";
 import { DataTable } from "@/components/common/data-table";
@@ -52,38 +23,40 @@ import { FilterBar, FilterSelect } from "@/components/common/filter-bar";
 import { StatusBadge } from "@/components/common/status-badge";
 import { RowActions } from "@/components/common/row-actions";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
-import { DetailGrid, DetailRow, DetailSection, DetailSheet } from "@/components/common/detail-sheet";
-import { Label } from "@/components/ui/label";
-import { tenants as tenantSeed } from "@/lib/mock-data/tenants";
+import {
+  DetailGrid,
+  DetailRow,
+  DetailSection,
+  DetailSheet,
+} from "@/components/common/detail-sheet";
+import { ServerErrorAlert } from "@/components/auth/server-error-alert";
+import { MissingBlock, MissingValue, gapHint } from "@/components/tenants/missing-value";
+import { TenantFormDialog } from "@/components/tenants/tenant-form-dialog";
+import { useBulkTenantStatus, useToggleTenantStatus } from "@/hooks/use-tenant-actions";
+import {
+  useCreateTenant,
+  useDeleteTenant,
+  useTenantOverview,
+  useTenantPage,
+  useTenantStatistics,
+} from "@/hooks/use-tenants";
+import { describeApiError, traceIdOf } from "@/lib/api-client";
 import { LABELS, label } from "@/lib/labels";
-import type { Tenant, TenantStatus } from "@/types";
-import { formatCompact, formatCompactCurrency, formatDate, formatNumber } from "@/lib/utils";
-
-const tenantFormSchema = z.object({
-  name: z.string().min(2, "租户名称至少 2 个字符").max(40, "租户名称过长"),
-  slug: z
-    .string()
-    .min(2, "标识至少 2 个字符")
-    .regex(/^[a-z0-9-]+$/, "标识只能包含小写字母、数字与连字符"),
-  plan: z.enum(["free", "team", "business", "enterprise"]),
-  status: z.enum(["active", "trial", "suspended", "expired", "provisioning"]),
-  region: z.string().min(1, "请选择区域"),
-  ownerName: z.string().min(2, "请填写负责人"),
-  ownerEmail: z.string().email("请输入合法邮箱"),
-  seats: z.coerce.number().int().min(1, "至少 1 个席位").max(5000, "席位过多"),
-  allowCustomModels: z.boolean(),
-  allowByok: z.boolean(),
-  allowLocalModels: z.boolean(),
-  allowSharedModels: z.boolean(),
-});
-
-type TenantFormValues = z.infer<typeof tenantFormSchema>;
+import { REGION_OPTIONS, exportTenantsCsv, toUpdateRequest } from "@/lib/tenants";
+import { cn, formatCompact, formatCompactCurrency, formatDate } from "@/lib/utils";
+import {
+  TENANT_STATUS_DISABLED,
+  isTenantEnabled,
+  tenantExpiryState,
+  tenantRowStatus,
+  type TenantRow,
+} from "@/types/tenant";
 
 const PLAN_OPTIONS = Object.entries(LABELS)
   .filter(([key]) => ["free", "team", "business", "enterprise"].includes(key))
   .map(([value, labelText]) => ({ value, label: labelText }));
 
-const STATUS_OPTIONS = [
+const STATUS_FILTER_OPTIONS = [
   { value: "active", label: "正常" },
   { value: "trial", label: "试用中" },
   { value: "suspended", label: "已暂停" },
@@ -91,31 +64,66 @@ const STATUS_OPTIONS = [
   { value: "provisioning", label: "开通中" },
 ];
 
-const REGION_OPTIONS = [
-  { value: "华东-上海", label: "华东-上海" },
-  { value: "华北-北京", label: "华北-北京" },
-  { value: "华南-深圳", label: "华南-深圳" },
-  { value: "华东-杭州", label: "华东-杭州" },
-  { value: "华中-武汉", label: "华中-武汉" },
-];
-
 export default function TenantsPage() {
-  const [tenantList, setTenantList] = React.useState<Tenant[]>(tenantSeed);
+  const [page, setPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(10);
+  const [searchInput, setSearchInput] = React.useState("");
+  const [keyword, setKeyword] = React.useState("");
   const [planFilter, setPlanFilter] = React.useState("all");
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [regionFilter, setRegionFilter] = React.useState("all");
-  const [createOpen, setCreateOpen] = React.useState(false);
-  const [detailTenant, setDetailTenant] = React.useState<Tenant | null>(null);
-  const [editingTenant, setEditingTenant] = React.useState<Tenant | null>(null);
-  const [deleteTarget, setDeleteTarget] = React.useState<Tenant | null>(null);
-  const [deletePending, setDeletePending] = React.useState(false);
+  const [formOpen, setFormOpen] = React.useState(false);
+  const [detailTenant, setDetailTenant] = React.useState<TenantRow | null>(null);
+  const [editingTenant, setEditingTenant] = React.useState<TenantRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<TenantRow | null>(null);
 
+  const params = React.useMemo(
+    () => ({ page, pageSize, keyword: keyword || undefined }),
+    [page, pageSize, keyword],
+  );
+
+  const pageQuery = useTenantPage(params);
+  const statisticsQuery = useTenantStatistics();
+  const overviewQuery = useTenantOverview(detailTenant?.id, detailTenant !== null);
+
+  const createTenant = useCreateTenant();
+  const deleteTenant = useDeleteTenant();
+  const { toggle } = useToggleTenantStatus();
+  const bulkStatus = useBulkTenantStatus();
+
+  const tenantList = React.useMemo<TenantRow[]>(
+    () => (pageQuery.data?.items ?? []).map((item) => ({ ...item })),
+    [pageQuery.data],
+  );
+  const total = pageQuery.data?.total ?? 0;
+
+  // 搜索防抖 300ms；关键字变化回到第 1 页
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setKeyword(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  // 删除后当前页可能为空，回退一页
+  React.useEffect(() => {
+    if (!pageQuery.isFetching && page > 1 && pageQuery.data && pageQuery.data.items.length === 0) {
+      setPage((current) => Math.max(1, current - 1));
+    }
+  }, [page, pageQuery.isFetching, pageQuery.data]);
+
+  /**
+   * 套餐 / 状态 / 区域筛选暂在**当前分页**内生效：
+   * 后端 `TenantQueryRequest` 目前只有 page / pageSize / keyword，
+   * 等后端补上 planCode / status / region 查询参数后，这里改成透传即可。
+   */
   const filtered = React.useMemo(
     () =>
       tenantList.filter(
         (tenant) =>
-          (planFilter === "all" || tenant.plan === planFilter) &&
-          (statusFilter === "all" || tenant.status === statusFilter) &&
+          (planFilter === "all" || tenant.planCode === planFilter) &&
+          (statusFilter === "all" || tenantRowStatus(tenant) === statusFilter) &&
           (regionFilter === "all" || tenant.region === regionFilter),
       ),
     [tenantList, planFilter, statusFilter, regionFilter],
@@ -126,129 +134,49 @@ export default function TenantsPage() {
   ).length;
 
   const stats = React.useMemo(() => {
-    const total = tenantList.length;
-    const active = tenantList.filter((tenant) => tenant.status === "active").length;
-    const trial = tenantList.filter((tenant) => tenant.status === "trial").length;
-    const risk = tenantList.filter(
-      (tenant) => tenant.status === "suspended" || tenant.status === "expired",
-    ).length;
-    const users = tenantList.reduce((totalUsers, tenant) => totalUsers + tenant.userCount, 0);
-    const cost = tenantList.reduce((totalCost, tenant) => totalCost + tenant.monthlyCost, 0);
-    return { total, active, trial, risk, users, cost };
+    const active = tenantList.filter((tenant) => tenantRowStatus(tenant) === "active").length;
+    const risk = tenantList.filter((tenant) => {
+      const status = tenantRowStatus(tenant);
+      return status === "suspended" || status === "expired";
+    }).length;
+    return { active, risk };
   }, [tenantList]);
 
-  const form = useForm<TenantFormValues>({
-    resolver: zodResolver(tenantFormSchema),
-    defaultValues: {
-      name: "",
-      slug: "",
-      plan: "team",
-      status: "trial",
-      region: "华东-上海",
-      ownerName: "",
-      ownerEmail: "",
-      seats: 20,
-      allowCustomModels: false,
-      allowByok: true,
-      allowLocalModels: false,
-      allowSharedModels: false,
-    },
-  });
-
-  React.useEffect(() => {
-    if (editingTenant) {
-      form.reset({
-        name: editingTenant.name,
-        slug: editingTenant.slug,
-        plan: editingTenant.plan,
-        status: editingTenant.status,
-        region: editingTenant.region,
-        ownerName: editingTenant.ownerName,
-        ownerEmail: editingTenant.ownerEmail,
-        seats: editingTenant.seats,
-        allowCustomModels: editingTenant.allowCustomModels,
-        allowByok: editingTenant.allowByok,
-        allowLocalModels: editingTenant.allowLocalModels,
-        allowSharedModels: editingTenant.allowSharedModels,
-      });
-    } else {
-      form.reset();
-    }
-  }, [editingTenant, form]);
-
-  const onSubmit = (values: TenantFormValues) => {
-    if (editingTenant) {
-      setTenantList((list) =>
-        list.map((tenant) => (tenant.id === editingTenant.id ? { ...tenant, ...values } : tenant)),
-      );
-      toast.success(`已更新租户「${values.name}」`);
-      setEditingTenant(null);
+  const duplicateTenant = async (tenant: TenantRow) => {
+    const payload = toUpdateRequest(tenant);
+    if (!payload) {
+      toast.error("该租户缺少编码/名称/套餐等必填字段，无法复制");
       return;
     }
-
-    const newTenant: Tenant = {
-      id: `tn-${String(tenantList.length + 1).padStart(2, "0")}`,
-      name: values.name,
-      slug: values.slug,
-      plan: values.plan,
-      status: values.status,
-      region: values.region,
-      ownerName: values.ownerName,
-      ownerEmail: values.ownerEmail,
-      seats: values.seats,
-      userCount: 1,
-      projectCount: 0,
-      agentCount: 0,
-      monthlyCalls: 0,
-      monthlyTokens: 0,
-      monthlyCost: 0,
-      expiresAt: new Date(Date.now() + 30 * 86_400_000).toISOString(),
-      createdAt: new Date().toISOString(),
-      ssoEnabled: false,
-      allowCustomModels: values.allowCustomModels,
-      allowByok: values.allowByok,
-      allowLocalModels: values.allowLocalModels,
-      allowSharedModels: values.allowSharedModels,
-      tags: ["新建"],
-      quota: {
-        tokens: { used: 0, limit: 20_000_000, unit: "tokens" },
-        calls: { used: 0, limit: 200_000, unit: "次" },
-        storage: { used: 0, limit: 200, unit: "GB" },
-        concurrency: { used: 0, limit: 20, unit: "并发" },
-        cost: { used: 0, limit: 20_000, unit: "CNY" },
-      },
-    };
-
-    setTenantList((list) => [newTenant, ...list]);
-    toast.success(`已创建租户「${values.name}」并发送开通通知`);
-    setCreateOpen(false);
-    form.reset();
+    try {
+      await createTenant.mutateAsync({
+        ...payload,
+        tenantCode: `${payload.tenantCode}-COPY`,
+        tenantName: `${payload.tenantName}（副本）`,
+      });
+      toast.success("已复制租户配置");
+    } catch (error) {
+      toast.error(describeApiError(error));
+    }
   };
 
-  const toggleStatus = (tenant: Tenant) => {
-    const next: TenantStatus = tenant.status === "suspended" ? "active" : "suspended";
-    setTenantList((list) =>
-      list.map((item) => (item.id === tenant.id ? { ...item, status: next } : item)),
-    );
-    toast.success(next === "suspended" ? `已暂停「${tenant.name}」` : `已恢复「${tenant.name}」`);
-  };
-
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTarget) return;
-    setDeletePending(true);
-    window.setTimeout(() => {
-      setTenantList((list) => list.filter((tenant) => tenant.id !== deleteTarget.id));
-      toast.success(`已删除租户「${deleteTarget.name}」`);
-      setDeletePending(false);
+    try {
+      await deleteTenant.mutateAsync(deleteTarget.id);
+      toast.success(`已删除租户「${deleteTarget.tenantName}」`);
+      if (detailTenant?.id === deleteTarget.id) setDetailTenant(null);
       setDeleteTarget(null);
-    }, 500);
+    } catch (error) {
+      toast.error(describeApiError(error));
+    }
   };
 
-  const columns = React.useMemo<ColumnDef<Tenant, unknown>[]>(
+  const columns = React.useMemo<ColumnDef<TenantRow, unknown>[]>(
     () => [
       {
         id: "name",
-        accessorKey: "name",
+        accessorKey: "tenantName",
         header: "租户",
         cell: ({ row }) => (
           <div className="min-w-0">
@@ -257,29 +185,39 @@ export default function TenantsPage() {
               className="hover:text-primary text-xs font-medium transition-colors"
               onClick={(event) => event.stopPropagation()}
             >
-              {row.original.name}
+              {row.original.tenantName || "（未命名）"}
             </Link>
-            <p className="text-muted-foreground font-mono text-2xs">{row.original.slug}</p>
+            <p className="text-muted-foreground text-2xs font-mono">{row.original.tenantCode}</p>
           </div>
         ),
       },
       {
         id: "plan",
-        accessorKey: "plan",
+        accessorKey: "planCode",
         header: "套餐",
-        cell: ({ row }) => <Badge variant="secondary">{label(row.original.plan)}</Badge>,
+        cell: ({ row }) =>
+          row.original.planCode ? (
+            <Badge variant="secondary">{label(row.original.planCode)}</Badge>
+          ) : (
+            <MissingValue />
+          ),
       },
       {
         id: "status",
         accessorKey: "status",
         header: "状态",
-        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+        cell: ({ row }) => <StatusBadge status={tenantRowStatus(row.original)} />,
       },
       {
         id: "region",
         accessorKey: "region",
         header: "区域",
-        cell: ({ row }) => <span className="text-2xs">{row.original.region}</span>,
+        cell: ({ row }) =>
+          row.original.region ? (
+            <span className="text-2xs">{row.original.region}</span>
+          ) : (
+            <MissingValue hint={gapHint("region")} />
+          ),
       },
       {
         id: "ownerName",
@@ -287,8 +225,14 @@ export default function TenantsPage() {
         header: "负责人",
         cell: ({ row }) => (
           <div className="min-w-0">
-            <p className="text-xs">{row.original.ownerName}</p>
-            <p className="text-muted-foreground truncate text-2xs">{row.original.ownerEmail}</p>
+            {row.original.ownerName ? (
+              <p className="text-xs">{row.original.ownerName}</p>
+            ) : (
+              <MissingValue hint={gapHint("ownerName")} />
+            )}
+            <p className="text-muted-foreground text-2xs truncate">
+              {row.original.contactEmail || "—"}
+            </p>
           </div>
         ),
       },
@@ -296,46 +240,79 @@ export default function TenantsPage() {
         id: "userCount",
         accessorKey: "userCount",
         header: "成员",
-        cell: ({ row }) => (
-          <span className="num text-xs">
-            {row.original.userCount} / {row.original.seats}
-          </span>
-        ),
+        cell: ({ row }) =>
+          row.original.userCount != null && row.original.seats != null ? (
+            <span className="num text-xs">
+              {row.original.userCount} / {row.original.seats}
+            </span>
+          ) : (
+            <MissingValue hint={`${gapHint("userCount")}；${gapHint("seats")}`} />
+          ),
       },
       {
         id: "monthlyCalls",
         accessorKey: "monthlyCalls",
         header: "月调用量",
-        cell: ({ row }) => <span className="num text-xs">{formatCompact(row.original.monthlyCalls)}</span>,
+        cell: ({ row }) =>
+          row.original.monthlyCalls != null ? (
+            <span className="num text-xs">{formatCompact(row.original.monthlyCalls)}</span>
+          ) : (
+            <MissingValue hint={gapHint("monthlyCalls")} />
+          ),
       },
       {
         id: "monthlyCost",
         accessorKey: "monthlyCost",
         header: "月成本",
-        cell: ({ row }) => (
-          <span className="num text-xs">{formatCompactCurrency(row.original.monthlyCost)}</span>
-        ),
+        cell: ({ row }) =>
+          row.original.monthlyCost != null ? (
+            <span className="num text-xs">{formatCompactCurrency(row.original.monthlyCost)}</span>
+          ) : (
+            <MissingValue hint={gapHint("monthlyCost")} />
+          ),
       },
       {
         id: "expiresAt",
-        accessorKey: "expiresAt",
+        accessorKey: "expireAt",
         header: "到期时间",
-        cell: ({ row }) => (
-          <span className="num text-2xs">{formatDate(row.original.expiresAt)}</span>
-        ),
+        cell: ({ row }) => {
+          if (!row.original.expireAt) return <MissingValue />;
+          const state = tenantExpiryState(row.original.expireAt);
+          return (
+            <span
+              className={cn(
+                "num text-2xs",
+                state === "expired" && "text-destructive",
+                state === "expiring" && "text-amber-600 dark:text-amber-400",
+              )}
+            >
+              {formatDate(row.original.expireAt, "yyyy-MM-dd")}
+            </span>
+          );
+        },
       },
       {
         id: "flags",
         header: "租户开关",
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex items-center gap-1">
-            {row.original.allowCustomModels ? <Badge variant="outline">自定义</Badge> : null}
-            {row.original.allowByok ? <Badge variant="outline">BYOK</Badge> : null}
-            {row.original.allowLocalModels ? <Badge variant="outline">本地</Badge> : null}
-            {row.original.allowSharedModels ? <Badge variant="outline">共享</Badge> : null}
-          </div>
-        ),
+        cell: ({ row }) => {
+          const flags = [
+            row.original.allowCustomModels ? "自定义" : null,
+            row.original.allowByok ? "BYOK" : null,
+            row.original.allowLocalModels ? "本地" : null,
+            row.original.allowSharedModels ? "共享" : null,
+          ].filter((item): item is string => item !== null);
+          if (flags.length === 0) return <MissingValue hint={gapHint("featureFlags")} />;
+          return (
+            <div className="flex items-center gap-1">
+              {flags.map((flag) => (
+                <Badge key={flag} variant="outline">
+                  {flag}
+                </Badge>
+              ))}
+            </div>
+          );
+        },
       },
       {
         id: "actions",
@@ -346,46 +323,39 @@ export default function TenantsPage() {
           <RowActions
             onView={() => setDetailTenant(row.original)}
             onEdit={() => setEditingTenant(row.original)}
-            onDuplicate={() => {
-              setTenantList((list) => [
-                {
-                  ...row.original,
-                  id: `tn-${String(list.length + 1).padStart(2, "0")}`,
-                  name: `${row.original.name}（副本）`,
-                  slug: `${row.original.slug}-copy`,
-                  status: "provisioning",
-                  createdAt: new Date().toISOString(),
-                },
-                ...list,
-              ]);
-              toast.success("已复制租户配置");
-            }}
-            onToggleStatus={() => toggleStatus(row.original)}
-            statusActive={row.original.status !== "suspended"}
+            onDuplicate={() => void duplicateTenant(row.original)}
+            onToggleStatus={() => void toggle(row.original)}
+            statusActive={isTenantEnabled(row.original.status)}
             onDelete={() => setDeleteTarget(row.original)}
           />
         ),
       },
     ],
-    [],
+    // toggle / duplicateTenant 每次渲染都是新引用，仅用于单元格回调渲染
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [toggle],
   );
 
   return (
     <PageContainer>
       <PageHeader
         title="租户管理"
-        description="管理租户的套餐、配额、功能开关与生命周期，支持批量操作与详情抽屉。"
+        description="数据来自后端 /api/admin/v1/tenants：分页、按租户编码搜索与增删改查已接入；标「—」的字段是后端 DTO 暂未提供，页面元素保留待接口补齐。"
         actions={
           <>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => toast.success(`已导出 ${filtered.length} 条租户数据（演示）`)}
+              disabled={filtered.length === 0}
+              onClick={() => {
+                exportTenantsCsv(filtered);
+                toast.success(`已导出当前页 ${filtered.length} 条租户数据`);
+              }}
             >
               <Download />
               导出
             </Button>
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Button size="sm" onClick={() => setFormOpen(true)}>
               <Plus />
               新建租户
             </Button>
@@ -394,20 +364,44 @@ export default function TenantsPage() {
       />
 
       <StatCardGrid className="xl:grid-cols-3 2xl:grid-cols-6">
-        <StatCard label="租户总数" value={stats.total} icon={Building2} delta={3.2} />
-        <StatCard label="正常租户" value={stats.active} icon={ShieldCheck} tone="success" hint="付费且在服务期内" />
-        <StatCard label="试用中" value={stats.trial} icon={Filter} tone="info" hint="需要跟进转化" />
-        <StatCard label="风险租户" value={stats.risk} icon={TriangleAlert} tone="danger" hint="已暂停或已过期" />
-        <StatCard label="覆盖成员" value={stats.users} icon={Users} delta={5.8} />
         <StatCard
-          label="月度成本"
-          value={stats.cost}
-          valueFormatter={(value) => formatCompactCurrency(value)}
-          delta={-6.8}
-          invertDelta
-          tone="warning"
+          label="租户总数"
+          value={statisticsQuery.data?.total ?? 0}
+          icon={Building2}
+          hint="来自 GET /tenants/statistics"
         />
+        <StatCard
+          label="正常租户"
+          value={stats.active}
+          icon={ShieldCheck}
+          tone="success"
+          hint="按当前分页统计，后端暂无服务期口径"
+        />
+        <StatCard
+          label="试用中"
+          value="—"
+          icon={Filter}
+          tone="info"
+          hint={gapHint("statusDetail")}
+        />
+        <StatCard
+          label="风险租户"
+          value={stats.risk}
+          icon={TriangleAlert}
+          tone="danger"
+          hint="当前分页内已暂停或已过期"
+        />
+        <StatCard label="覆盖成员" value="—" icon={Users} hint={gapHint("statistics")} />
+        <StatCard label="月度成本" value="—" tone="warning" hint={gapHint("statistics")} />
       </StatCardGrid>
+
+      {pageQuery.isError ? (
+        <ServerErrorAlert
+          title="租户列表加载失败"
+          message={describeApiError(pageQuery.error)}
+          traceId={traceIdOf(pageQuery.error)}
+        />
+      ) : null}
 
       <FilterBar
         activeCount={activeFilterCount}
@@ -417,16 +411,46 @@ export default function TenantsPage() {
           setRegionFilter("all");
         }}
       >
-        <FilterSelect label="套餐" value={planFilter} onChange={setPlanFilter} options={PLAN_OPTIONS} />
-        <FilterSelect label="状态" value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} />
-        <FilterSelect label="区域" value={regionFilter} onChange={setRegionFilter} options={REGION_OPTIONS} />
+        <FilterSelect
+          label="套餐"
+          value={planFilter}
+          onChange={setPlanFilter}
+          options={PLAN_OPTIONS}
+        />
+        <FilterSelect
+          label="状态"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={STATUS_FILTER_OPTIONS}
+        />
+        <FilterSelect
+          label="区域"
+          value={regionFilter}
+          onChange={setRegionFilter}
+          options={REGION_OPTIONS}
+        />
       </FilterBar>
+      <p className="text-muted-foreground text-2xs">
+        套餐 / 状态 / 区域筛选目前只作用于当前分页：后端 TenantQueryRequest 只支持
+        page、pageSize、keyword；区域字段后端未提供，选中后列表为空属预期。
+      </p>
 
       <DataTable
         columns={columns}
         data={filtered}
+        isLoading={pageQuery.isPending}
         getRowId={(row) => row.id}
-        searchPlaceholder="搜索租户名称、标识、负责人…"
+        searchPlaceholder="按租户编码搜索（后端仅匹配 tenant_code）…"
+        searchValue={searchInput}
+        onSearchChange={setSearchInput}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={(nextSize) => {
+          setPageSize(nextSize);
+          setPage(1);
+        }}
         enableRowSelection
         onRowClick={(row) => setDetailTenant(row)}
         bulkActions={(rows, clear) => (
@@ -434,10 +458,9 @@ export default function TenantsPage() {
             <Button
               variant="ghost"
               size="xs"
-              onClick={() => {
-                toast.success(`已批量发送续费提醒（${rows.length} 个租户）`);
-                clear();
-              }}
+              onClick={() =>
+                toast.warning("后端暂未提供续费提醒接口（缺口已记录），本次未发送任何通知")
+              }
             >
               通知续费
             </Button>
@@ -445,16 +468,9 @@ export default function TenantsPage() {
               variant="ghost"
               size="xs"
               className="text-destructive"
+              disabled={bulkStatus.pending}
               onClick={() => {
-                setTenantList((list) =>
-                  list.map((tenant) =>
-                    rows.some((row) => row.id === tenant.id)
-                      ? { ...tenant, status: "suspended" }
-                      : tenant,
-                  ),
-                );
-                toast.success(`已暂停 ${rows.length} 个租户`);
-                clear();
+                void bulkStatus.apply(rows, TENANT_STATUS_DISABLED).then(clear);
               }}
             >
               <Trash2 />
@@ -462,239 +478,36 @@ export default function TenantsPage() {
             </Button>
           </>
         )}
-        emptyTitle="没有符合条件的租户"
+        emptyTitle={keyword ? "没有匹配的租户编码" : "没有符合条件的租户"}
+        emptyDescription={
+          keyword
+            ? `后端只按 tenant_code 模糊匹配，没有找到包含「${keyword}」的租户。`
+            : "当前数据库还没有租户数据，可以先创建一条。"
+        }
         emptyAction={
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Button size="sm" onClick={() => setFormOpen(true)}>
             <Plus />
             新建租户
           </Button>
         }
       />
 
-      <Dialog
-        open={createOpen || editingTenant !== null}
+      <TenantFormDialog
+        open={formOpen || editingTenant !== null}
         onOpenChange={(open) => {
-          if (!open) {
-            setCreateOpen(false);
-            setEditingTenant(null);
-          }
+          setFormOpen(open);
+          if (!open) setEditingTenant(null);
         }}
-      >
-        <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingTenant ? `编辑租户 · ${editingTenant.name}` : "新建租户"}</DialogTitle>
-            <DialogDescription>
-              表单仅保存在本地状态，用于演示管理端的创建与编辑流程。
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>租户名称</FormLabel>
-                      <FormControl>
-                        <Input placeholder="例如：云启科技" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="slug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>租户标识</FormLabel>
-                      <FormControl>
-                        <Input placeholder="cloudnova" {...field} />
-                      </FormControl>
-                      <FormDescription>用于子域名与 API 路径，创建后不建议修改。</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="plan"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>套餐</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PLAN_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>状态</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {STATUS_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="region"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>区域</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {REGION_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="seats"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>席位数量</FormLabel>
-                      <FormControl>
-                        <Input type="number" min={1} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="ownerName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>负责人</FormLabel>
-                      <FormControl>
-                        <Input placeholder="例如：陈立" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="ownerEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>负责人邮箱</FormLabel>
-                      <FormControl>
-                        <Input placeholder="owner@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="space-y-3 rounded-md border border-border p-3">
-                <div>
-                  <p className="text-xs font-medium">租户级功能开关</p>
-                  <p className="text-muted-foreground text-2xs">
-                    关闭后该租户无法使用对应能力，已在运行的模型会进入只读状态。
-                  </p>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {(
-                    [
-                      ["allowCustomModels", "允许自定义模型"],
-                      ["allowByok", "允许 BYOK"],
-                      ["allowLocalModels", "允许本地模型"],
-                      ["allowSharedModels", "允许共享模型"],
-                    ] as const
-                  ).map(([name, labelText]) => (
-                    <FormField
-                      key={name}
-                      control={form.control}
-                      name={name}
-                      render={({ field }) => (
-                        <div className="flex items-center justify-between rounded-md border border-border px-3 py-2">
-                          <Label htmlFor={`switch-${name}`} className="text-xs font-normal">
-                            {labelText}
-                          </Label>
-                          <Switch
-                            id={`switch-${name}`}
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </div>
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setCreateOpen(false);
-                    setEditingTenant(null);
-                  }}
-                >
-                  取消
-                </Button>
-                <Button type="submit" size="sm">
-                  {editingTenant ? "保存修改" : "创建租户"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+        tenant={editingTenant}
+      />
 
       <DetailSheet
         open={detailTenant !== null}
         onOpenChange={(open) => {
           if (!open) setDetailTenant(null);
         }}
-        title={detailTenant?.name ?? "租户详情"}
-        description={detailTenant ? `${detailTenant.slug} · ${detailTenant.region}` : undefined}
+        title={detailTenant?.tenantName ?? "租户详情"}
+        description={detailTenant?.tenantCode}
         footer={
           detailTenant ? (
             <div className="flex items-center justify-between">
@@ -705,8 +518,8 @@ export default function TenantsPage() {
                 <Button variant="outline" size="sm" onClick={() => setEditingTenant(detailTenant)}>
                   编辑
                 </Button>
-                <Button size="sm" onClick={() => toggleStatus(detailTenant)}>
-                  {detailTenant.status === "suspended" ? "恢复服务" : "暂停服务"}
+                <Button size="sm" onClick={() => void toggle(detailTenant)}>
+                  {isTenantEnabled(detailTenant.status) ? "暂停服务" : "恢复服务"}
                 </Button>
               </div>
             </div>
@@ -716,9 +529,11 @@ export default function TenantsPage() {
         {detailTenant ? (
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status={detailTenant.status} />
-              <Badge variant="secondary">{label(detailTenant.plan)}</Badge>
-              {detailTenant.tags.map((tag) => (
+              <StatusBadge status={tenantRowStatus(detailTenant)} />
+              {detailTenant.planCode ? (
+                <Badge variant="secondary">{label(detailTenant.planCode)}</Badge>
+              ) : null}
+              {(detailTenant.tags ?? []).map((tag) => (
                 <Badge key={tag} variant="outline">
                   {tag}
                 </Badge>
@@ -730,20 +545,50 @@ export default function TenantsPage() {
                 <DetailRow label="租户 ID" mono>
                   {detailTenant.id}
                 </DetailRow>
-                <DetailRow label="创建时间">{formatDate(detailTenant.createdAt, "yyyy-MM-dd HH:mm")}</DetailRow>
+                <DetailRow label="创建时间">
+                  {detailTenant.createdAt
+                    ? formatDate(detailTenant.createdAt, "yyyy-MM-dd HH:mm")
+                    : "—"}
+                </DetailRow>
                 <DetailRow label="负责人">
-                  {detailTenant.ownerName}（{detailTenant.ownerEmail}）
+                  {detailTenant.ownerName ? (
+                    `${detailTenant.ownerName}（${detailTenant.contactEmail || "—"}）`
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <MissingValue hint={gapHint("ownerName")} />
+                      <span className="text-muted-foreground text-2xs">
+                        {detailTenant.contactEmail || "—"}
+                      </span>
+                    </span>
+                  )}
                 </DetailRow>
                 <DetailRow label="到期时间">
-                  <span className="num">{formatDate(detailTenant.expiresAt)}</span>
+                  {detailTenant.expireAt ? (
+                    <span className="num">{formatDate(detailTenant.expireAt, "yyyy-MM-dd")}</span>
+                  ) : (
+                    <MissingValue />
+                  )}
                 </DetailRow>
                 <DetailRow label="席位使用">
-                  <span className="num">
-                    {detailTenant.userCount} / {detailTenant.seats}
-                  </span>
+                  {detailTenant.userCount != null && detailTenant.seats != null ? (
+                    <span className="num">
+                      {detailTenant.userCount} / {detailTenant.seats}
+                    </span>
+                  ) : (
+                    <MissingValue hint={`${gapHint("userCount")}；${gapHint("seats")}`} />
+                  )}
                 </DetailRow>
                 <DetailRow label="SSO">
-                  {detailTenant.ssoEnabled ? "已启用" : "未启用"}
+                  {detailTenant.ssoEnabled == null ? (
+                    <MissingValue hint={gapHint("ssoEnabled")} />
+                  ) : detailTenant.ssoEnabled ? (
+                    "已启用"
+                  ) : (
+                    "未启用"
+                  )}
+                </DetailRow>
+                <DetailRow label="组织数量">
+                  <span className="num">{overviewQuery.data?.organizationCount ?? 0}</span>
                 </DetailRow>
               </DetailGrid>
             </DetailSection>
@@ -751,58 +596,43 @@ export default function TenantsPage() {
             <DetailSection title="用量概览">
               <DetailGrid>
                 <DetailRow label="月调用量">
-                  <span className="num">{formatNumber(detailTenant.monthlyCalls)}</span>
+                  {detailTenant.monthlyCalls != null ? (
+                    <span className="num">{formatCompact(detailTenant.monthlyCalls)}</span>
+                  ) : (
+                    <MissingValue hint={gapHint("monthlyCalls")} />
+                  )}
                 </DetailRow>
                 <DetailRow label="月 Token">
-                  <span className="num">{formatCompact(detailTenant.monthlyTokens)}</span>
+                  {detailTenant.monthlyTokens != null ? (
+                    <span className="num">{formatCompact(detailTenant.monthlyTokens)}</span>
+                  ) : (
+                    <MissingValue hint={gapHint("monthlyTokens")} />
+                  )}
                 </DetailRow>
                 <DetailRow label="月成本">
-                  <span className="num">{formatCompactCurrency(detailTenant.monthlyCost)}</span>
+                  {detailTenant.monthlyCost != null ? (
+                    <span className="num">{formatCompactCurrency(detailTenant.monthlyCost)}</span>
+                  ) : (
+                    <MissingValue hint={gapHint("monthlyCost")} />
+                  )}
                 </DetailRow>
                 <DetailRow label="项目 / Agent">
-                  <span className="num">
-                    {detailTenant.projectCount} / {detailTenant.agentCount}
-                  </span>
+                  {detailTenant.projectCount != null && detailTenant.agentCount != null ? (
+                    <span className="num">
+                      {detailTenant.projectCount} / {detailTenant.agentCount}
+                    </span>
+                  ) : (
+                    <MissingValue hint={`${gapHint("projectCount")}；${gapHint("agentCount")}`} />
+                  )}
                 </DetailRow>
               </DetailGrid>
             </DetailSection>
 
             <DetailSection title="配额使用" description="超出配额后调用会被限流，并触发超支告警">
-              <div className="space-y-3">
-                {(
-                  [
-                    ["Token", detailTenant.quota.tokens],
-                    ["调用次数", detailTenant.quota.calls],
-                    ["存储", detailTenant.quota.storage],
-                    ["并发", detailTenant.quota.concurrency],
-                    ["成本", detailTenant.quota.cost],
-                  ] as const
-                ).map(([quotaLabel, bucket]) => {
-                  const percent = Math.min(100, Math.round((bucket.used / bucket.limit) * 100));
-                  return (
-                    <div key={quotaLabel} className="space-y-1">
-                      <div className="flex items-center justify-between text-2xs">
-                        <span className="text-muted-foreground">{quotaLabel}</span>
-                        <span className="num">
-                          {formatCompact(bucket.used)} / {formatCompact(bucket.limit)} {bucket.unit}
-                        </span>
-                      </div>
-                      <div className="bg-muted h-1.5 overflow-hidden rounded-full">
-                        <div
-                          className={
-                            percent >= 90
-                              ? "bg-red-500 h-full rounded-full"
-                              : percent >= 70
-                                ? "bg-amber-500 h-full rounded-full"
-                                : "bg-emerald-500 h-full rounded-full"
-                          }
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <MissingBlock
+                title="配额数据待接口补齐"
+                hint={`${gapHint("quota")}；页面保留该区块，接口就绪后恢复进度条。`}
+              />
             </DetailSection>
 
             <DetailSection title="租户级功能开关">
@@ -817,10 +647,14 @@ export default function TenantsPage() {
                 ).map(([flagLabel, enabled]) => (
                   <div
                     key={flagLabel}
-                    className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-xs"
+                    className="border-border flex items-center justify-between rounded-md border px-3 py-2 text-xs"
                   >
                     {flagLabel}
-                    <StatusBadge status={enabled ? "enabled" : "disabled"} />
+                    {enabled == null ? (
+                      <MissingValue hint={gapHint("featureFlags")} />
+                    ) : (
+                      <StatusBadge status={enabled ? "enabled" : "disabled"} />
+                    )}
                   </div>
                 ))}
               </div>
@@ -834,11 +668,11 @@ export default function TenantsPage() {
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
-        title={`删除租户「${deleteTarget?.name ?? ""}」？`}
-        description="删除后该租户的成员、项目、密钥与用量数据将进入 30 天回收站，期间可人工恢复。"
+        title={`删除租户「${deleteTarget?.tenantName ?? ""}」？`}
+        description="后端执行逻辑删除（ap_tenant.deleted = 1）后，该租户不再出现在列表与详情接口中；成员、项目等数据不会被级联清理。"
         confirmLabel="确认删除"
-        loading={deletePending}
-        onConfirm={confirmDelete}
+        loading={deleteTenant.isPending}
+        onConfirm={() => void confirmDelete()}
       />
     </PageContainer>
   );
