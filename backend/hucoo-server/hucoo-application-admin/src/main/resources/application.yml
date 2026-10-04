@@ -4,6 +4,8 @@ server:
     threads:
       virtual:
         enabled: true
+    # 上传中断时 Tomcat 需要吞掉剩余请求体，否则连接被重置
+    max-swallow-size: 210MB
   shutdown: graceful
 
 spring:
@@ -11,6 +13,12 @@ spring:
     name: hucoo-application-admin
   profiles:
     active: dev
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 210MB
+      # 超过阈值落磁盘临时文件，避免大文件进堆内存
+      file-size-threshold: 2MB
   threads:
     virtual:
       enabled: true
@@ -82,6 +90,34 @@ mybatis-plus:
 agent-platform:
   persistence:
     enabled: false
+  # 对象存储：s3（RustFS/MinIO/AWS S3/OSS）| local（本地文件系统，仅单机）| memory（仅测试）
+  # 生产 profile 强制 s3：本地存储不共享，多实例部署会读到不同的文件
+  storage:
+    enabled: true
+    type: ${HUCOO_FILE_STORAGE_TYPE:local}
+    default-bucket: ${HUCOO_FILE_BUCKET:hucoo-files}
+    key-prefix: files
+    simple-upload-threshold: 8MB
+    part-size: 8MB
+    max-file-size: 200MB
+    presign-ttl: 10m
+    upload-session-ttl: 24h
+    auto-create-bucket: true
+    local:
+      root: ${HUCOO_FILE_LOCAL_ROOT:./data/files}
+      create-dirs: true
+    s3:
+      endpoint: ${HUCOO_S3_ENDPOINT:http://127.0.0.1:9000}
+      # 签发给浏览器的地址必须是对外可达地址，且与访问时的 host/scheme/port 完全一致
+      public-endpoint: ${HUCOO_S3_PUBLIC_ENDPOINT:http://127.0.0.1:9000}
+      region: ${HUCOO_S3_REGION:us-east-1}
+      access-key: ${HUCOO_S3_ACCESS_KEY:hucoo-local-ak}
+      secret-key: ${HUCOO_S3_SECRET_KEY:hucoo-local-sk}
+      path-style-access: true
+      chunked-encoding-enabled: false
+      connection-timeout: 3s
+      socket-timeout: 60s
+      max-connections: 64
   security:
     enabled: false
     jwt-secret: ${HUCOO_JWT_SECRET:hucoo-agent-platform-local-secret-please-change}
@@ -108,6 +144,14 @@ agent-platform:
       wechat: false
       qq: false
   modules:
+    file:
+      enabled: true
+      max-file-size: 200MB
+      download-audit-enabled: true
+      signed-url-ttl: 10m
+      signed-url-secret: ${HUCOO_FILE_SIGNED_URL_SECRET:hucoo-file-signed-url-local-secret-please-change}
+      # 生成绝对下载地址用；留空返回相对路径
+      signed-url-base: ${HUCOO_FILE_SIGNED_URL_BASE:}
     audit:
       enabled: true
       operation-log:
@@ -148,6 +192,8 @@ management:
       enabled: false
     redis:
       enabled: false
+    storage:
+      enabled: true
   metrics:
     tags:
       application: ${spring.application.name}

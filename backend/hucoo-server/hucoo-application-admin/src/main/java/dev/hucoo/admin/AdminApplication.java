@@ -16,7 +16,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "dev.hucoo.audit",
         "dev.hucoo.security",
         "dev.hucoo.monitoring",
-        "dev.hucoo.integration"
+        "dev.hucoo.integration",
+        "dev.hucoo.file"
 })
 // 扫描范围需要显式列出：MyBatis 的 Mapper 不是全部位于 <module>.infrastructure.mapper，
 // 还有三个例外包：

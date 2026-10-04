@@ -64,6 +64,10 @@
             <groupId>dev.hucoo</groupId>
             <artifactId>hucoo-module-integration</artifactId>
         </dependency>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-module-file</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>dev.hucoo</groupId>

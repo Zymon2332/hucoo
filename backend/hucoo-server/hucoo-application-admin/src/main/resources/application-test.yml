@@ -11,6 +11,12 @@ agent-platform:
     enabled: false
   security:
     enabled: false
+  # 契约导出与启动测试必须零外部依赖：本地驱动 + 临时目录
+  storage:
+    type: local
+    auto-create-bucket: true
+    local:
+      root: ${java.io.tmpdir}/hucoo-file-test
 
 logging:
   level:

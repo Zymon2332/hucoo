@@ -8,7 +8,12 @@ spring:
 
 agent-platform:
   persistence:
-    enabled: false
+    enabled: true
+  # 本地开发不依赖 RustFS：默认落到 ./data/files；要连 RustFS 就设 HUCOO_FILE_STORAGE_TYPE=s3
+  storage:
+    type: ${HUCOO_FILE_STORAGE_TYPE:local}
+    local:
+      root: ${HUCOO_FILE_LOCAL_ROOT:./data/files}
 
 logging:
   level:

@@ -16,6 +16,22 @@ spring:
 agent-platform:
   persistence:
     enabled: true
+  # 生产强制对象存储：本地文件系统不共享，多实例部署会读到不同的文件
+  storage:
+    type: s3
+    auto-create-bucket: false
+    s3:
+      endpoint: ${HUCOO_S3_ENDPOINT}
+      public-endpoint: ${HUCOO_S3_PUBLIC_ENDPOINT:${HUCOO_S3_ENDPOINT}}
+      region: ${HUCOO_S3_REGION:us-east-1}
+      access-key: ${HUCOO_S3_ACCESS_KEY}
+      secret-key: ${HUCOO_S3_SECRET_KEY}
+      path-style-access: true
+      chunked-encoding-enabled: false
+  modules:
+    file:
+      signed-url-secret: ${HUCOO_FILE_SIGNED_URL_SECRET}
+      signed-url-base: ${HUCOO_FILE_SIGNED_URL_BASE:}
   security:
     enabled: true
     jwt-secret: ${HUCOO_JWT_SECRET}
@@ -40,6 +56,8 @@ agent-platform:
 management:
   health:
     db:
+      enabled: true
+    storage:
       enabled: true
     nacos:
       discovery:
