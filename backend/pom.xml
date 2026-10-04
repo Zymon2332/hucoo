@@ -214,6 +214,11 @@
                 <artifactId>hucoo-module-integration</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-file</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

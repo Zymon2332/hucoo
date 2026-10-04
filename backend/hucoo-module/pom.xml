@@ -26,6 +26,7 @@
         <module>hucoo-module-security</module>
         <module>hucoo-module-monitoring</module>
         <module>hucoo-module-integration</module>
+        <module>hucoo-module-file</module>
     </modules>
 
     <properties>
