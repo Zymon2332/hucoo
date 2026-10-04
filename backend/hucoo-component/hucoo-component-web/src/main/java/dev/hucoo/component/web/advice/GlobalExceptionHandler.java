@@ -15,6 +15,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import dev.hucoo.commons.api.PlatformConstants;
 import dev.hucoo.commons.dto.Result;
@@ -63,6 +64,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({MissingServletRequestParameterException.class, MethodArgumentTypeMismatchException.class})
     public Result<Void> handleParameterException(Exception ex) {
         return badRequest(ex.getMessage());
+    }
+
+    /**
+     * multipart 层的大小限制（{@code spring.servlet.multipart.max-file-size} / {@code max-request-size}）。
+     *
+     * <p>这类请求在进入业务代码之前就被 Tomcat/Spring 拒绝，业务模块的"文件过大"错误码用不上，
+     * 因此统一在这里返回 413 与平台级错误码，避免把框架的英文异常信息直接暴露给前端。
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Result<Void>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
+        log.warn("upload size exceeded: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(Result.<Void>fail(CommonErrorCode.PAYLOAD_TOO_LARGE.getCode(),
+                                CommonErrorCode.PAYLOAD_TOO_LARGE.getMessage())
+                        .withTraceId(org.slf4j.MDC.get(PlatformConstants.TRACE_ID_MDC_KEY)));
     }
 
     @ExceptionHandler(Exception.class)
