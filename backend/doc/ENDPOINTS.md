@@ -2,7 +2,7 @@
 
 > 本文件由 `doc/openapi.json` 生成，请勿手工编辑；变更接口后先跑 `./scripts/export-openapi.sh` 再提交。
 
-接口总数 **227**，路径 **155** 条，资源分组 **29** 个。
+接口总数 **237**，路径 **163** 条，资源分组 **32** 个。
 所有路径前缀为 `/api/admin/v1`，响应统一为 `Result<T>` 信封（见 [API_CONTRACT.md](API_CONTRACT.md)）。
 
 ## Agent 模板
@@ -123,6 +123,31 @@
 | `GET` | `/api/admin/v1/jobs/{jobId}` | 查询异步任务 |
 | `POST` | `/api/admin/v1/jobs/{jobId}/cancel` | 取消异步任务 |
 | `POST` | `/api/admin/v1/jobs/{jobId}/retry` | 重试异步任务 |
+
+## 文件上传
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/api/admin/v1/files/uploads` | 上传文件（multipart/form-data，服务端代理） |
+
+## 文件下载
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/admin/v1/files/download/{token}` | 分享链接下载（匿名，token 即凭证） |
+| `GET` | `/api/admin/v1/files/{id}/content` | 下载文件 |
+
+## 文件管理
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/admin/v1/files` | 分页查询文件 |
+| `GET` | `/api/admin/v1/files/storage/capabilities` | 当前存储驱动能力（前端据此决定是否展示直传） |
+| `DELETE` | `/api/admin/v1/files/{id}` | 移入回收站 |
+| `GET` | `/api/admin/v1/files/{id}` | 查询文件详情 |
+| `PATCH` | `/api/admin/v1/files/{id}` | 更新文件属性（重命名 / 可见性 / 业务绑定） |
+| `POST` | `/api/admin/v1/files/{id}/restore` | 回收站还原 |
+| `GET` | `/api/admin/v1/files/{id}/url` | 获取下载地址（S3 为预签名直链，本地为后端签名代理地址） |
 
 ## 权限管理
 

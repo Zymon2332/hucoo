@@ -62,6 +62,7 @@ hucoo-agent-platform/
 │   ├── hucoo-component-cache/
 │   ├── hucoo-component-database/
 │   ├── hucoo-component-observability/
+│   ├── hucoo-component-storage/
 │   └── hucoo-component-test/
 ├── hucoo-module/
 │   ├── hucoo-module-tenant/
@@ -74,7 +75,8 @@ hucoo-agent-platform/
 │   ├── hucoo-module-audit/
 │   ├── hucoo-module-security/
 │   ├── hucoo-module-monitoring/
-│   └── hucoo-module-integration/
+│   ├── hucoo-module-integration/
+│   └── hucoo-module-file/
 └── hucoo-server/
     ├── hucoo-application-admin/     # 管理端应用启动器
     └── hucoo-gateway-server/        # WebFlux 网关

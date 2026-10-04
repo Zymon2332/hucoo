@@ -52,7 +52,7 @@
 }
 ```
 
-错误码按模块分段：平台 `400xxx`，租户 `100xxx`，身份 `110xxx`，模型 `120xxx`，工具 `130xxx`，Agent `140xxx`，项目 `150xxx`，计费 `160xxx`，审计 `170xxx`，安全 `180xxx`，监控 `190xxx`，集成 `200xxx`。
+错误码按模块分段：平台 `400xxx`，租户 `100xxx`，身份 `110xxx`，模型 `120xxx`，工具 `130xxx`，Agent `140xxx`，项目 `150xxx`，计费 `160xxx`，审计 `170xxx`，安全 `180xxx`，监控 `190xxx`，集成 `200xxx`，审批 `210xxx`，文件 `220xxx`，基础设施组件 `300xxx`（对象存储等）。
 
 ## 幂等键
 
@@ -86,7 +86,17 @@
   脚本通过 `OpenApiContractExportTests` 在 `test` profile 下导出（关闭 Nacos 与安全拦截、Mock 持久化），无需外部依赖。
   `doc/openapi.json` 可提交并可在 `git diff` 中审阅接口变更，前端据此生成类型即可，不需要人工同步字段。
 
-当前基线：OpenAPI `3.1.0`，155 条路径 / 227 个操作 / 158 个 schema。
+当前基线：OpenAPI `3.1.0`，163 条路径 / 237 个操作 / 167 个 schema。
+
+### 二进制下载
+
+文件下载接口（`GET /api/admin/v1/files/{id}/content`、`GET /api/admin/v1/files/download/{token}`）
+返回原始字节流，**不是** `Result<T>` 信封，因此：
+
+- 控制器方法返回类型必须是 `Resource`（`void` / `String` / `byte[]` 同样会跳过响应包装）；
+  写成 `ResponseEntity<Resource>` 会被 `ResponseWrapper` 包成 `Result`，导致文件损坏。
+- 文件名通过 `Content-Disposition` 返回，已在 CORS 的 `exposedHeaders` 中暴露，前端可直接读取。
+- 失败时仍返回统一 `Result` 信封与对应 HTTP 状态（例如 `220011` 状态不允许下载）。
 契约内容与运行中的服务 `GET /v3/api-docs` 经过逐路径与逐 schema 比对，保持一致。
 
 ### 前端消费要点
