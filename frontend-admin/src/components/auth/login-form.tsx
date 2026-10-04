@@ -1,49 +1,39 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import {
-  Building2,
-  Loader2,
-  LockKeyhole,
-  QrCode,
-  RefreshCw,
-  Smartphone,
-  UserRound,
-} from "lucide-react";
+import { Loader2, LockKeyhole, QrCode, Smartphone, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { AuthErrorSummary, useErrorSummary } from "@/components/auth/form-error-summary";
 import { PasswordInput } from "@/components/auth/password-input";
+import { ServerErrorAlert } from "@/components/auth/server-error-alert";
 import { AuthDivider, SsoButtons } from "@/components/auth/sso-buttons";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { tenants } from "@/lib/mock-data/tenants";
-import { sleep } from "@/lib/utils";
+import { useAuthProviders, methodEnabled } from "@/hooks/use-auth-providers";
+import { authApi } from "@/lib/api/auth";
+import { describeApiError, traceIdOf } from "@/lib/api-client";
+import { safeNextPath } from "@/lib/auth/redirect";
+import { signIn } from "@/lib/auth/session";
 
 const accountSchema = z.object({
-  tenant: z.string().min(1, "请选择企业空间"),
   account: z.string().trim().min(3, "账号至少 3 个字符").max(64, "账号长度不能超过 64 个字符"),
-  password: z.string().min(8, "密码至少 8 位").max(72, "密码长度不能超过 72 位"),
+  password: z.string().min(1, "请输入登录密码").max(128, "密码长度不能超过 128 位"),
   remember: z.boolean(),
 });
 
@@ -61,26 +51,43 @@ const TABS = [
   { value: "qr", label: "扫码登录" },
 ] as const;
 
+interface ServerError {
+  message: string;
+  traceId?: string;
+}
+
 function AccountLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const formRef = React.useRef<HTMLFormElement>(null);
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
     mode: "onBlur",
     shouldFocusError: false,
-    defaultValues: {
-      tenant: tenants[0]?.id ?? "",
-      account: "",
-      password: "",
-      remember: true,
-    },
+    defaultValues: { account: "", password: "", remember: true },
   });
   const summary = useErrorSummary<AccountFormValues>(form, formRef);
+  const [serverError, setServerError] = React.useState<ServerError | null>(null);
 
-  const onSubmit = async () => {
-    await sleep(600);
-    toast.success("登录成功，正在进入控制台");
-    router.push("/dashboard");
+  // 重新输入时清掉上一次的服务端报错，避免旧提示误导
+  React.useEffect(() => {
+    const subscription = form.watch(() => setServerError(null));
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  const onSubmit = async (values: AccountFormValues) => {
+    setServerError(null);
+    try {
+      await signIn({
+        identifier: values.account,
+        credential: values.password,
+        remember: values.remember,
+      });
+      toast.success("登录成功，正在进入控制台");
+      router.replace(safeNextPath(searchParams.get("next")));
+    } catch (error) {
+      setServerError({ message: describeApiError(error), traceId: traceIdOf(error) });
+    }
   };
 
   return (
@@ -88,34 +95,13 @@ function AccountLoginForm() {
       <form ref={formRef} noValidate onSubmit={form.handleSubmit(onSubmit, summary.handleInvalid)}>
         <div className="flex flex-col gap-4">
           <AuthErrorSummary items={summary.items} summaryRef={summary.summaryRef} />
-
-          <FormField
-            control={form.control}
-            name="tenant"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  <Building2 className="text-muted-foreground size-3.5" />
-                  企业空间
-                </FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="请选择企业空间" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {tenants.map((tenant) => (
-                      <SelectItem key={tenant.id} value={tenant.id}>
-                        {tenant.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {serverError ? (
+            <ServerErrorAlert
+              title="登录失败"
+              message={serverError.message}
+              traceId={serverError.traceId}
+            />
+          ) : null}
 
           <FormField
             control={form.control}
@@ -127,8 +113,14 @@ function AccountLoginForm() {
                   账号
                 </FormLabel>
                 <FormControl>
-                  <Input autoComplete="username" placeholder="用户名或工作邮箱" {...field} />
+                  <Input
+                    autoComplete="username"
+                    autoFocus
+                    placeholder="用户名或工作邮箱"
+                    {...field}
+                  />
                 </FormControl>
+                <FormDescription>企业空间由账号决定，登录后可切换有权限的空间。</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -191,6 +183,12 @@ function AccountLoginForm() {
             )}
           </Button>
 
+          <p className="text-muted-foreground text-2xs leading-relaxed">
+            后端内置演示账号：<span className="font-mono">admin</span> /{" "}
+            <span className="font-mono">Admin@12345</span>
+            （注册的账号使用注册时设置的密码）。
+          </p>
+
           <AuthDivider label="其他登录方式" />
           <SsoButtons disabled={form.formState.isSubmitting} />
         </div>
@@ -201,6 +199,7 @@ function AccountLoginForm() {
 
 function PhoneLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const formRef = React.useRef<HTMLFormElement>(null);
   const form = useForm<PhoneFormValues>({
     resolver: zodResolver(phoneSchema),
@@ -209,6 +208,7 @@ function PhoneLoginForm() {
     defaultValues: { phone: "", code: "" },
   });
   const summary = useErrorSummary<PhoneFormValues>(form, formRef);
+  const [serverError, setServerError] = React.useState<ServerError | null>(null);
 
   const [countdown, setCountdown] = React.useState(0);
   const [sending, setSending] = React.useState(false);
@@ -223,17 +223,38 @@ function PhoneLoginForm() {
     const valid = await form.trigger("phone");
     if (!valid) return;
 
+    setServerError(null);
     setSending(true);
-    await sleep(500);
-    setSending(false);
-    setCountdown(60);
-    toast.success("验证码已发送（演示环境固定为 123456）");
+    try {
+      await authApi.sendVerificationCode({
+        channel: "SMS",
+        purpose: "LOGIN",
+        destination: form.getValues("phone"),
+      });
+      setCountdown(60);
+      toast.success("验证码已发送");
+    } catch (error) {
+      // 校验用 toast 提示，提交用顶部 Alert，避免重复占用焦点
+      toast.error(describeApiError(error));
+    } finally {
+      setSending(false);
+    }
   };
 
-  const onSubmit = async () => {
-    await sleep(600);
-    toast.success("登录成功，正在进入控制台");
-    router.push("/dashboard");
+  const onSubmit = async (values: PhoneFormValues) => {
+    setServerError(null);
+    try {
+      await signIn({
+        method: "SMS",
+        identifier: values.phone,
+        credential: values.code,
+        remember: true,
+      });
+      toast.success("登录成功，正在进入控制台");
+      router.replace(safeNextPath(searchParams.get("next")));
+    } catch (error) {
+      setServerError({ message: describeApiError(error), traceId: traceIdOf(error) });
+    }
   };
 
   return (
@@ -241,6 +262,13 @@ function PhoneLoginForm() {
       <form ref={formRef} noValidate onSubmit={form.handleSubmit(onSubmit, summary.handleInvalid)}>
         <div className="flex flex-col gap-4">
           <AuthErrorSummary items={summary.items} summaryRef={summary.summaryRef} />
+          {serverError ? (
+            <ServerErrorAlert
+              title="登录失败"
+              message={serverError.message}
+              traceId={serverError.traceId}
+            />
+          ) : null}
 
           <FormField
             control={form.control}
@@ -319,105 +347,44 @@ function PhoneLoginForm() {
   );
 }
 
-const QR_SIZE = 21;
-
-/** 演示用占位二维码：确定性伪随机点阵 + 三个定位角，仅为视觉占位，不含真实编码。 */
-function buildQrMatrix(seed: number) {
-  const cells: boolean[] = [];
-  let value = seed * 9301 + 49297;
-  const next = () => {
-    value = (value * 9301 + 49297) % 233280;
-    return value / 233280;
-  };
-
-  for (let index = 0; index < QR_SIZE * QR_SIZE; index += 1) {
-    cells.push(next() > 0.55);
-  }
-
-  const isFinder = (row: number, col: number, originRow: number, originCol: number) => {
-    const rowOffset = row - originRow;
-    const colOffset = col - originCol;
-    if (rowOffset < 0 || rowOffset > 6 || colOffset < 0 || colOffset > 6) return null;
-    const onBorder = rowOffset === 0 || rowOffset === 6 || colOffset === 0 || colOffset === 6;
-    const inCenter = rowOffset >= 2 && rowOffset <= 4 && colOffset >= 2 && colOffset <= 4;
-    return onBorder || inCenter;
-  };
-
-  for (let row = 0; row < QR_SIZE; row += 1) {
-    for (let col = 0; col < QR_SIZE; col += 1) {
-      const finder =
-        isFinder(row, col, 0, 0) ??
-        isFinder(row, col, 0, QR_SIZE - 7) ??
-        isFinder(row, col, QR_SIZE - 7, 0);
-      if (finder !== null) cells[row * QR_SIZE + col] = finder;
-    }
-  }
-
-  return cells;
-}
-
+/** 扫码登录：后端尚未提供二维码接口，这里如实说明，不再展示占位二维码。 */
 function QrLoginPanel() {
-  const [seed, setSeed] = React.useState(1);
-  const cells = React.useMemo(() => buildQrMatrix(seed), [seed]);
-
   return (
-    <div className="flex flex-col items-center gap-4 py-1">
-      <div
-        role="img"
-        aria-label="登录二维码（演示环境占位图形）"
-        className="border-border bg-card rounded-xl border p-3 shadow-[var(--shadow-card)]"
-      >
-        <div
-          className="grid gap-px"
-          style={{ gridTemplateColumns: `repeat(${QR_SIZE}, minmax(0, 1fr))` }}
-        >
-          {cells.map((filled, index) => (
-            <span
-              key={index}
-              className={
-                filled ? "bg-foreground aspect-square rounded-[1px]" : "aspect-square rounded-[1px]"
-              }
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="text-center">
-        <p className="text-foreground flex items-center justify-center gap-1.5 text-xs font-medium">
-          <QrCode className="size-3.5" />
-          使用「Agent 平台」移动端扫码登录
-        </p>
-        <p className="text-muted-foreground text-2xs mt-1">
-          演示环境：二维码为占位图形，刷新后可重新生成
-        </p>
-      </div>
-
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          setSeed((value) => value + 1);
-          toast.info("二维码已刷新（演示环境）");
-        }}
-      >
-        <RefreshCw className="size-3.5" />
-        刷新二维码
-      </Button>
-    </div>
+    <Alert variant="info">
+      <QrCode />
+      <AlertTitle>扫码登录尚未接入</AlertTitle>
+      <AlertDescription>
+        后端未提供二维码登录接口（可用认证方式见 <span className="font-mono">/auth/providers</span>
+        ），接入后会在此展示二维码。
+      </AlertDescription>
+    </Alert>
   );
 }
 
 export function LoginForm() {
+  const providers = useAuthProviders();
+  const smsEnabled = methodEnabled(providers.data, "SMS");
+
   return (
     <Tabs defaultValue="account" className="gap-5">
       <TabsList className="h-9 w-full">
         {TABS.map((tab) => (
-          <TabsTrigger key={tab.value} value={tab.value} className="h-8 flex-1 text-xs sm:text-sm">
+          <TabsTrigger
+            key={tab.value}
+            value={tab.value}
+            disabled={tab.value === "phone" && smsEnabled === false}
+            className="h-8 flex-1 text-xs sm:text-sm"
+          >
             {tab.label}
           </TabsTrigger>
         ))}
       </TabsList>
+
+      {smsEnabled === false ? (
+        <p className="text-muted-foreground text-2xs -mt-2 leading-relaxed">
+          后端当前只启用了账号密码登录，手机号登录未启用。
+        </p>
+      ) : null}
 
       <TabsContent value="account">
         <AccountLoginForm />
@@ -446,7 +413,7 @@ export function LoginForm() {
         >
           《隐私政策》
         </button>
-        ，演示数据不会离开本机。
+        ，登录凭证仅保存在本机浏览器。
       </p>
     </Tabs>
   );

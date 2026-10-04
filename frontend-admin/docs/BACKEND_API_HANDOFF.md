@@ -121,9 +121,24 @@ curl -X POST http://localhost:8081/api/admin/v1/auth/login \
 
 - 只支持 `PASSWORD` 方式，`SMS`/`EMAIL`/`WECHAT`/`QQ` 会返回 `110005 认证方式未启用`，`/auth/providers` 会如实返回 `enabled: false`。
 - `POST /api/admin/v1/auth/verification-codes` 返回 `110005`，Mock 未实现验证码。
+- **注册账号使用注册时设置的密码**：`POST /auth/register` 会保存 `password`（PBKDF2 哈希，与真实实现同一个 `PasswordHasher`），注册后可直接用该密码登录；`admin` / `operator` 这两个内置账号没有密码记录，仍使用统一演示密码 `Admin@12345`。
 - 数据存内存，重启后端即失效（令牌、注册的账号都会丢）。
 
-## 4. 建议的客户端代码
+## 4. 客户端代码（已在 frontend-admin 落地）
+
+下表是本文建议的落地位置；相比示例代码，实际实现补上了令牌刷新、401 自动重试、会话持久化与路由守卫。
+
+| 关注点 | 文件 |
+| --- | --- |
+| 环境变量 | `src/lib/env.ts`（`NEXT_PUBLIC_API_BASE_URL`，默认 `http://localhost:8081`） |
+| 信封 / 分页 / 错误类型 | `src/types/api.ts`（`ApiEnvelope`、`ApiPage`、`ApiError`、错误码兜底文案） |
+| 请求客户端 | `src/lib/api-client.ts`（拆信封、注入令牌与 `X-Tenant-Id`、401 刷新重试、网络异常归一） |
+| 认证接口 | `src/lib/api/auth.ts`、`src/types/auth.ts` |
+| 会话状态 | `src/lib/auth/session.ts`（zustand + localStorage/sessionStorage、刷新单飞、JWT 载荷解析） |
+| 登录 / 注册表单 | `src/components/auth/login-form.tsx`、`register-form.tsx` |
+| 路由守卫 | `src/components/auth/require-auth.tsx`（挂在 `src/app/(admin)/layout.tsx`） |
+
+下面是原始建议示例（4.1 ~ 4.4），保留作为约定说明；落地版本在此基础上扩展了刷新与会话管理。
 
 ### 4.1 环境变量
 
@@ -344,3 +359,31 @@ cd backend && ./scripts/export-openapi.sh
 ```
 
 `backend/doc/ENDPOINTS.md` 是所有接口的分组清单（29 个分组、227 个操作），可当索引用。
+
+## 8. 登录 / 注册实现现状
+
+### 已实现（真实接口，不再模拟）
+
+| 能力 | 说明 |
+| --- | --- |
+| 账号密码登录 | `POST /auth/login`（`method: PASSWORD`），失败展示后端 `message` 与 `traceId` |
+| 注册 | `POST /auth/register` → 注册成功后自动登录；若后端返回未激活则回落到登录页 |
+| 记住我 | 勾选写 `localStorage`，不勾选只写 `sessionStorage`（键 `hucoo.admin.session`） |
+| 令牌刷新 | 访问令牌过期前 30s 自动刷新；请求遇 401 刷新一次后重放，失败则回到登录页 |
+| 路由守卫 | `/(admin)/**` 未登录跳 `/login?next=<原路径>`；登录后回跳（只接受站内相对路径） |
+| 退出登录 | 先清本地会话，再尽力 `POST /auth/logout` 撤销 refreshToken |
+| 用户信息 | 登录后 `GET /auth/me` 补全姓名；`user-menu` 展示真实账号，租户取 JWT 的 `tenantId` |
+| 认证方式探测 | `GET /auth/providers` 决定手机号登录、第三方登录按钮是否可用（未启用即禁用并说明） |
+
+### 尚未接入
+
+- 短信 / 邮箱验证码登录、扫码登录（后端无接口，页面已如实说明而不是假成功）
+- OAuth 完整回调链（只调用了 `GET /auth/oauth/{provider}/authorize`，未处理 `callback` 与 `state` 校验）
+- 会话管理页（`GET /auth/sessions`、`DELETE /auth/sessions/{id}` 已在 `authApi` 里，但暂无界面）
+- `/(admin)` 下除登录态外的业务页面仍使用 `src/lib/mock-data/**`
+
+### 联调提示
+
+- 默认打 `http://localhost:8081`；如需切换，复制 `.env.example` 为 `.env.local` 改 `NEXT_PUBLIC_API_BASE_URL`。
+- 若 8081 上跑的是未包含「注册密码校验」修复的旧进程，注册后用自己的密码登录会返回 `110004`，重启后端即可（`cd backend && ./mvnw -pl hucoo-server/hucoo-application-admin spring-boot:run -Dspring-boot.run.profiles=test`）。
+

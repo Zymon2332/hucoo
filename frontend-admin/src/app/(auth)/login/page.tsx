@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthCard } from "@/components/auth/auth-shell";
@@ -7,6 +8,18 @@ export const metadata: Metadata = {
   title: "登录",
   description: "登录 Agent 平台管理控制台，管理租户、权限、模型、工具与用量计费。",
 };
+
+/** `LoginForm` 依赖 useSearchParams 读取 next 参数，静态渲染时需要 Suspense 边界。 */
+function LoginFormFallback() {
+  return (
+    <div className="flex flex-col gap-4" aria-hidden>
+      <div className="bg-muted h-9 rounded-lg" />
+      <div className="bg-muted h-16 rounded-lg" />
+      <div className="bg-muted h-16 rounded-lg" />
+      <div className="bg-muted h-10 rounded-lg" />
+    </div>
+  );
+}
 
 export default function LoginPage() {
   return (
@@ -25,7 +38,9 @@ export default function LoginPage() {
         </>
       }
     >
-      <LoginForm />
+      <Suspense fallback={<LoginFormFallback />}>
+        <LoginForm />
+      </Suspense>
     </AuthCard>
   );
 }

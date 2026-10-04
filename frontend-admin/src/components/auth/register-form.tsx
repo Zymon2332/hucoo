@@ -1,22 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import {
-  Building2,
-  Loader2,
-  LockKeyhole,
-  Mail,
-  ShieldCheck,
-  Smartphone,
-  UserRound,
-} from "lucide-react";
+import { Loader2, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { AuthErrorSummary, useErrorSummary } from "@/components/auth/form-error-summary";
 import { PasswordInput } from "@/components/auth/password-input";
+import { ServerErrorAlert } from "@/components/auth/server-error-alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -29,24 +22,27 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { cn, sleep } from "@/lib/utils";
+import { describeApiError, traceIdOf } from "@/lib/api-client";
+import { safeNextPath } from "@/lib/auth/redirect";
+import { registerAccount, signIn } from "@/lib/auth/session";
+import { isApiError } from "@/types/api";
+import { cn } from "@/lib/utils";
 
-const PHONE_PATTERN = /^1[3-9]\d{9}$/;
+const ACCOUNT_PATTERN = /^[A-Za-z0-9._@-]+$/;
 
 const registerSchema = z
   .object({
-    company: z
+    account: z
       .string()
       .trim()
-      .min(2, "企业名称至少 2 个字符")
-      .max(48, "企业名称不能超过 48 个字符"),
-    name: z.string().trim().min(2, "请输入管理员姓名").max(24, "姓名不能超过 24 个字符"),
-    email: z.string().trim().email("请输入有效的工作邮箱"),
-    phone: z.string().regex(PHONE_PATTERN, "请输入 11 位中国大陆手机号"),
+      .min(3, "账号至少 3 个字符")
+      .max(64, "账号长度不能超过 64 个字符")
+      .regex(ACCOUNT_PATTERN, "账号仅支持字母、数字与 . _ - @"),
+    name: z.string().trim().max(24, "姓名不能超过 24 个字符"),
     password: z
       .string()
       .min(8, "密码至少 8 位")
-      .max(72, "密码长度不能超过 72 位")
+      .max(128, "密码长度不能超过 128 位")
       .regex(/[A-Za-z]/, "密码需包含字母")
       .regex(/\d/, "密码需包含数字"),
     confirmPassword: z.string().min(1, "请再次输入密码"),
@@ -101,38 +97,66 @@ function PasswordStrength({ value }: { value: string }) {
   );
 }
 
+interface ServerError {
+  title: string;
+  message: string;
+  traceId?: string;
+}
+
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const formRef = React.useRef<HTMLFormElement>(null);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     mode: "onBlur",
     shouldFocusError: false,
-    defaultValues: {
-      company: "",
-      name: "",
-      email: "",
-      phone: "",
-      password: "",
-      confirmPassword: "",
-      agreement: false,
-    },
+    defaultValues: { account: "", name: "", password: "", confirmPassword: "", agreement: false },
   });
   const summary = useErrorSummary<RegisterFormValues>(form, formRef, {
-    company: "企业名称",
-    name: "管理员姓名",
-    email: "工作邮箱",
-    phone: "手机号",
+    account: "登录账号",
+    name: "姓名",
     password: "登录密码",
     confirmPassword: "确认密码",
     agreement: "服务条款",
   });
   const passwordValue = form.watch("password");
+  const [serverError, setServerError] = React.useState<ServerError | null>(null);
+
+  React.useEffect(() => {
+    const subscription = form.watch(() => setServerError(null));
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const onSubmit = async (values: RegisterFormValues) => {
-    await sleep(700);
-    toast.success(`已为「${values.company}」创建管理员账号，请登录`);
-    router.push("/login");
+    setServerError(null);
+    try {
+      const result = await registerAccount({
+        identifier: values.account,
+        password: values.password,
+        displayName: values.name,
+      });
+
+      // 注册即激活的账号直接登录进入控制台；需要管理员激活的账号回落到登录页。
+      try {
+        await signIn({
+          identifier: values.account,
+          credential: values.password,
+          remember: true,
+        });
+        toast.success(`账号「${result.username}」已创建，正在进入控制台`);
+        router.replace(safeNextPath(searchParams.get("next")));
+      } catch {
+        toast.success(`账号「${result.username}」已创建，请使用该账号登录`);
+        router.push("/login");
+      }
+    } catch (error) {
+      setServerError({
+        title: isApiError(error) && error.status === 409 ? "该账号已被注册" : "注册失败",
+        message: describeApiError(error),
+        traceId: traceIdOf(error),
+      });
+    }
   };
 
   return (
@@ -140,20 +164,34 @@ export function RegisterForm() {
       <form ref={formRef} noValidate onSubmit={form.handleSubmit(onSubmit, summary.handleInvalid)}>
         <div className="flex flex-col gap-4">
           <AuthErrorSummary items={summary.items} summaryRef={summary.summaryRef} />
+          {serverError ? (
+            <ServerErrorAlert
+              title={serverError.title}
+              message={serverError.message}
+              traceId={serverError.traceId}
+            />
+          ) : null}
 
           <FormField
             control={form.control}
-            name="company"
+            name="account"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  <Building2 className="text-muted-foreground size-3.5" />
-                  企业名称
+                  <UserRound className="text-muted-foreground size-3.5" />
+                  登录账号
                 </FormLabel>
                 <FormControl>
-                  <Input autoComplete="organization" placeholder="例如：云启科技" {...field} />
+                  <Input
+                    autoComplete="username"
+                    autoFocus
+                    placeholder="用户名或工作邮箱"
+                    {...field}
+                  />
                 </FormControl>
-                <FormDescription>注册后将自动创建同名企业空间，可稍后邀请成员。</FormDescription>
+                <FormDescription>
+                  登录时使用，不区分大小写；可用字母、数字与 . _ - @。
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -165,57 +203,13 @@ export function RegisterForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  <UserRound className="text-muted-foreground size-3.5" />
-                  管理员姓名
+                  <ShieldCheck className="text-muted-foreground size-3.5" />
+                  姓名
                 </FormLabel>
                 <FormControl>
                   <Input autoComplete="name" placeholder="用于审批与审计留痕" {...field} />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  <Mail className="text-muted-foreground size-3.5" />
-                  工作邮箱
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="email"
-                    autoComplete="email"
-                    placeholder="name@company.com"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  <Smartphone className="text-muted-foreground size-3.5" />
-                  手机号
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    placeholder="11 位手机号"
-                    {...field}
-                  />
-                </FormControl>
+                <FormDescription>可留空，留空时展示登录账号。</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -294,7 +288,7 @@ export function RegisterForm() {
                     >
                       《隐私政策》
                     </button>
-                    ，并同意平台按演示规则创建账号。
+                    ，并同意平台创建该账号。
                   </p>
                 </div>
                 <FormMessage />
@@ -317,7 +311,7 @@ export function RegisterForm() {
           </Button>
 
           <p className="text-muted-foreground text-2xs leading-relaxed">
-            演示环境：提交后立即创建本地账号，不会向任何服务端发送数据。
+            注册即激活，成功后会自动登录；演示环境的数据保存在后端内存，后端重启后失效。
           </p>
         </div>
       </form>
