@@ -16,3 +16,12 @@ coverage/
 
 # TanStack Router generated
 apps/web/src/routeTree.gen.ts
+
+# IDE
+.idea
+
+# 本地运行产物
+logs/
+backend/**/data/
+backend/rustfs-data/
+backend/anon.bin
