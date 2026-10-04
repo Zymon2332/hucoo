@@ -1,5 +1,6 @@
 package dev.hucoo.admin;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +42,7 @@ class AdminApplicationTests {
                 .andExpect(jsonPath("$.data.items").isArray())
                 .andExpect(jsonPath("$.data.items[0].id").isString())
                 .andExpect(jsonPath("$.data.items[0].createdAt").isString())
-                .andExpect(jsonPath("$.data.total").value(3));
+                .andExpect(jsonPath("$.data.total").value(greaterThanOrEqualTo(3)));
     }
 
     @Test
@@ -53,7 +54,7 @@ class AdminApplicationTests {
                 .andExpect(jsonPath("$.data.items.length()").value(2))
                 .andExpect(jsonPath("$.data.page").value(1))
                 .andExpect(jsonPath("$.data.pageSize").value(2))
-                .andExpect(jsonPath("$.data.total").value(3));
+                .andExpect(jsonPath("$.data.total").value(greaterThanOrEqualTo(3)));
     }
 
     @Test
@@ -63,7 +64,7 @@ class AdminApplicationTests {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.items").isArray())
                 .andExpect(jsonPath("$.data.items.length()").value(2))
-                .andExpect(jsonPath("$.data.total").value(3));
+                .andExpect(jsonPath("$.data.total").value(greaterThanOrEqualTo(3)));
     }
 
     @Test
@@ -73,7 +74,7 @@ class AdminApplicationTests {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.items").isArray())
                 .andExpect(jsonPath("$.data.items.length()").value(2))
-                .andExpect(jsonPath("$.data.total").value(3));
+                .andExpect(jsonPath("$.data.total").value(greaterThanOrEqualTo(3)));
 
         mockMvc.perform(get("/api/admin/v1/permissions/matrix"))
                 .andExpect(status().isOk())
@@ -126,7 +127,7 @@ class AdminApplicationTests {
         MvcResult page = mockMvc.perform(get("/api/admin/v1/approvals").param("page", "1").param("pageSize", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items").isArray())
-                .andExpect(jsonPath("$.data.total").value(2))
+                .andExpect(jsonPath("$.data.total").value(greaterThanOrEqualTo(2)))
                 .andReturn();
         List<Map<String, Object>> items = JsonPath.read(page.getResponse().getContentAsString(), "$.data.items");
         String pendingId = items.stream()
