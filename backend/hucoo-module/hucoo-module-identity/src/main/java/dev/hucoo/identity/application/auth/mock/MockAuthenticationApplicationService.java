@@ -35,6 +35,7 @@ import dev.hucoo.identity.api.dto.AuthTokenResponse;
 import dev.hucoo.identity.api.dto.AuthVerificationCodeRequest;
 import dev.hucoo.identity.application.auth.AuthenticationApplicationService;
 import dev.hucoo.identity.application.auth.AuthenticationIdentifier;
+import dev.hucoo.identity.application.auth.PasswordHasher;
 import dev.hucoo.identity.config.AuthenticationProperties;
 import dev.hucoo.identity.domain.auth.entity.AuthIdentityUser;
 import dev.hucoo.identity.domain.auth.enums.AuthenticationMethod;
@@ -59,7 +60,7 @@ import dev.hucoo.identity.domain.auth.enums.IdentityUserStatus;
         matchIfMissing = true)
 public class MockAuthenticationApplicationService implements AuthenticationApplicationService {
 
-    /** 内置账号密码，仅本地联调用，登录时需与之一致。 */
+    /** 内置演示账号（admin / operator）的密码；注册账号使用各自注册时设置的密码。 */
     public static final String DEMO_PASSWORD = "Admin@12345";
 
     private static final String DEFAULT_CLIENT_ID = "ADMIN_CONSOLE";
@@ -69,21 +70,25 @@ public class MockAuthenticationApplicationService implements AuthenticationAppli
 
     private final AuthenticationProperties authenticationProperties;
     private final JwtUtil jwtUtil;
+    private final PasswordHasher passwordHasher;
     private final long accessTokenTtlMinutes;
     private final long refreshTokenTtlDays;
 
     private final Map<Long, AuthIdentityUser> users = new ConcurrentHashMap<>();
     private final Map<String, Long> identifiers = new ConcurrentHashMap<>();
+    private final Map<Long, String> passwordHashes = new ConcurrentHashMap<>();
     private final Map<String, Long> refreshTokens = new ConcurrentHashMap<>();
     private final Map<Long, RefreshSession> sessions = new ConcurrentHashMap<>();
     private final AtomicLong sessionSequence = new AtomicLong(1);
 
     public MockAuthenticationApplicationService(AuthenticationProperties authenticationProperties,
-                                                SecurityProperties securityProperties) {
+                                                SecurityProperties securityProperties,
+                                                PasswordHasher passwordHasher) {
         this.authenticationProperties = authenticationProperties;
         this.accessTokenTtlMinutes = authenticationProperties.getAccessTokenTtlMinutes();
         this.refreshTokenTtlDays = authenticationProperties.getRefreshTokenTtlDays();
         this.jwtUtil = new JwtUtil(securityProperties.getJwtSecret(), securityProperties.getJwtKeyId());
+        this.passwordHasher = passwordHasher;
         seed();
     }
 
@@ -106,6 +111,7 @@ public class MockAuthenticationApplicationService implements AuthenticationAppli
         user.setActivatedAt(LocalDateTime.now());
         users.put(userId, user);
         identifiers.put(key(AuthenticationMethod.PASSWORD, identifier), userId);
+        passwordHashes.put(userId, passwordHasher.hash(request.getPassword()));
         if (AuthenticationIdentifier.looksLikeEmail(identifier)) {
             identifiers.put(key(AuthenticationMethod.EMAIL, identifier), userId);
         } else if (identifier.matches("\\+?[0-9][0-9 -]{6,31}")) {
@@ -128,7 +134,7 @@ public class MockAuthenticationApplicationService implements AuthenticationAppli
         }
         String identifier = AuthenticationIdentifier.normalize(request.getIdentifier());
         Long userId = identifiers.get(key(AuthenticationMethod.PASSWORD, identifier));
-        if (userId == null || !DEMO_PASSWORD.equals(request.getCredential())) {
+        if (userId == null || !passwordMatches(userId, request.getCredential())) {
             throw new BusinessException(CommonErrorCode.AUTHENTICATION_FAILED, "账号或凭证错误");
         }
         AuthIdentityUser user = users.get(userId);
@@ -313,6 +319,17 @@ public class MockAuthenticationApplicationService implements AuthenticationAppli
                 .tenantId(tenantId)
                 .availableTenantIds(availableTenantIds)
                 .build();
+    }
+
+    /**
+     * 注册账号校验各自注册时设置的密码；内置演示账号（admin / operator）没有密码记录，沿用统一演示密码。
+     */
+    private boolean passwordMatches(Long userId, String credential) {
+        if (credential == null || credential.isBlank()) {
+            return false;
+        }
+        String hash = passwordHashes.get(userId);
+        return hash == null ? DEMO_PASSWORD.equals(credential) : passwordHasher.matches(credential, hash);
     }
 
     private void seed() {
