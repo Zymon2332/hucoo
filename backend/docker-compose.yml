@@ -33,3 +33,36 @@ services:
       - "6379:6379"
     volumes:
       - ./redis-data:/data
+
+  # RustFS：S3 兼容对象存储，作为 MinIO 的替代（Apache 2.0，1.0 GA）。
+  # 镜像以非 root 用户 rustfs（UID/GID 10001）运行，bind mount 前必须先 chown，
+  # 因此这里用一个一次性的 perms 服务完成授权。
+  rustfs-perms:
+    image: alpine:3.20
+    container_name: rustfs-perms
+    command: chown -R 10001:10001 /data
+    volumes:
+      - ./rustfs-data:/data
+    restart: "no"
+
+  rustfs:
+    image: rustfs/rustfs:1.0.1
+    container_name: rustfs
+    depends_on:
+      rustfs-perms:
+        condition: service_completed_successfully
+    command: ["/data"]
+    environment:
+      # 默认凭证 rustfsadmin/rustfsadmin 官方不推荐，这里显式覆盖
+      - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:-hucoo-local-ak}
+      - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:-hucoo-local-sk}
+      - RUSTFS_ADDRESS=:9000
+      - RUSTFS_CONSOLE_ADDRESS=:9001
+      - RUSTFS_CONSOLE_ENABLE=true
+      - RUSTFS_REGION=us-east-1
+      - RUSTFS_OBS_LOGGER_LEVEL=error
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # 控制台
+    volumes:
+      - ./rustfs-data:/data
