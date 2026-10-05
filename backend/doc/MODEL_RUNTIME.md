@@ -1,5 +1,7 @@
 # 模型运行时账户池
 
+模型治理和模型运行时的目标数据模型见：[模型与供应商治理设计](MODEL_GOVERNANCE_DESIGN.md)，当前配置接口及接入边界见：[实现与接入说明](MODEL_GOVERNANCE_IMPLEMENTATION.md)。本文保留现有运行时接口和账户池行为说明，新目录配置尚未切换到此调用链。
+
 模型运行时服务为平台模型提供 OpenAI-compatible 接口。服务名为 `hucoo-model-runtime`，默认端口 `8082`；Gateway 会把 `/api/model/**` 转发到该服务。
 
 ## 快速配置
