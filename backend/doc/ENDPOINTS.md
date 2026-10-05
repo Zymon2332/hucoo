@@ -2,7 +2,7 @@
 
 > 本文件由 `doc/openapi.json` 生成，请勿手工编辑；变更接口后先跑 `./scripts/export-openapi.sh` 再提交。
 
-接口总数 **237**，路径 **163** 条，资源分组 **32** 个。
+接口总数 **274**，路径 **184** 条，资源分组 **34** 个。
 所有路径前缀为 `/api/admin/v1`，响应统一为 `Result<T>` 信封（见 [API_CONTRACT.md](API_CONTRACT.md)）。
 
 ## Agent 模板
@@ -168,6 +168,9 @@
 | --- | --- | --- |
 | `GET` | `/api/admin/v1/models` | 分页查询模型治理 |
 | `POST` | `/api/admin/v1/models` | 创建模型治理 |
+| `DELETE` | `/api/admin/v1/models/channels/{id}` | 删除供应商渠道 |
+| `PATCH` | `/api/admin/v1/models/channels/{id}` | 更新供应商渠道完整配置 |
+| `PUT` | `/api/admin/v1/models/channels/{id}` | 更新供应商渠道 |
 | `GET` | `/api/admin/v1/models/custom` | 自定义模型列表 |
 | `POST` | `/api/admin/v1/models/custom` | 注册自定义模型 |
 | `DELETE` | `/api/admin/v1/models/custom/{id}` |  |
@@ -183,6 +186,8 @@
 | `DELETE` | `/api/admin/v1/models/providers/{id}` |  |
 | `PATCH` | `/api/admin/v1/models/providers/{id}` |  |
 | `PUT` | `/api/admin/v1/models/providers/{id}` |  |
+| `GET` | `/api/admin/v1/models/providers/{providerId}/channels` | 供应商渠道列表 |
+| `POST` | `/api/admin/v1/models/providers/{providerId}/channels` | 创建供应商渠道 |
 | `GET` | `/api/admin/v1/models/routing` | 模型路由规则列表 |
 | `POST` | `/api/admin/v1/models/routing` | 创建模型路由规则 |
 | `DELETE` | `/api/admin/v1/models/routing/{id}` |  |
@@ -194,6 +199,48 @@
 | `PATCH` | `/api/admin/v1/models/{id}` |  |
 | `PUT` | `/api/admin/v1/models/{id}` | 更新模型治理 |
 | `POST` | `/api/admin/v1/models/{id}/validation` | 异步验证模型 |
+
+## 模型目录与渠道配置
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/admin/v1/model-catalog/bindings/{bindingId}/prices` | 查询模型阶梯价格列表 |
+| `POST` | `/api/admin/v1/model-catalog/bindings/{bindingId}/prices` | 创建模型阶梯价格 |
+| `DELETE` | `/api/admin/v1/model-catalog/bindings/{id}` | 删除模型渠道映射 |
+| `PUT` | `/api/admin/v1/model-catalog/bindings/{id}` | 更新模型渠道映射并重新进入审核状态 |
+| `GET` | `/api/admin/v1/model-catalog/channels/{channelId}/credentials` | 查询渠道凭证脱敏信息 |
+| `POST` | `/api/admin/v1/model-catalog/channels/{channelId}/credentials` | 加密登记渠道凭证 |
+| `POST` | `/api/admin/v1/model-catalog/credentials/{id}/revoke` | 撤销渠道凭证 |
+| `POST` | `/api/admin/v1/model-catalog/credentials/{id}/rotate` | 轮换渠道凭证并记录轮换历史 |
+| `DELETE` | `/api/admin/v1/model-catalog/grants/{id}` | 删除模型可见性授权 |
+| `GET` | `/api/admin/v1/model-catalog/models` | 分页查询逻辑模型 |
+| `POST` | `/api/admin/v1/model-catalog/models` | 创建逻辑模型 |
+| `DELETE` | `/api/admin/v1/model-catalog/models/{id}` | 删除逻辑模型 |
+| `GET` | `/api/admin/v1/model-catalog/models/{id}` | 查询逻辑模型详情 |
+| `PUT` | `/api/admin/v1/model-catalog/models/{id}` | 更新逻辑模型并重置发布状态 |
+| `GET` | `/api/admin/v1/model-catalog/models/{modelId}/grants` | 查询模型可见性授权列表 |
+| `POST` | `/api/admin/v1/model-catalog/models/{modelId}/grants` | 创建模型可见性授权 |
+| `GET` | `/api/admin/v1/model-catalog/models/{modelId}/versions` | 查询模型版本列表 |
+| `POST` | `/api/admin/v1/model-catalog/models/{modelId}/versions` | 创建模型版本 |
+| `DELETE` | `/api/admin/v1/model-catalog/prices/{id}` | 删除模型阶梯价格 |
+| `DELETE` | `/api/admin/v1/model-catalog/versions/{id}` | 删除模型版本 |
+| `PUT` | `/api/admin/v1/model-catalog/versions/{id}` | 更新模型版本并重新进入审核状态 |
+| `GET` | `/api/admin/v1/model-catalog/versions/{versionId}/bindings` | 查询模型渠道映射列表 |
+| `POST` | `/api/admin/v1/model-catalog/versions/{versionId}/bindings` | 创建模型渠道映射 |
+| `GET` | `/api/admin/v1/model-catalog/versions/{versionId}/capabilities` | 查询模型版本能力声明 |
+| `PUT` | `/api/admin/v1/model-catalog/versions/{versionId}/capabilities` | 设置模型版本能力并重置版本发布状态 |
+| `POST` | `/api/admin/v1/model-catalog/{resource}/{id}/approve` | 审核发布模型配置 |
+
+## 模型路由配置
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/admin/v1/model-catalog/models/{modelId}/route-policies` | 查询逻辑模型的路由策略 |
+| `POST` | `/api/admin/v1/model-catalog/models/{modelId}/route-policies` | 创建逻辑模型的路由策略 |
+| `DELETE` | `/api/admin/v1/model-catalog/route-policies/{id}` | 删除模型路由策略 |
+| `GET` | `/api/admin/v1/model-catalog/route-policies/{policyId}/targets` | 查询策略的渠道路由目标 |
+| `POST` | `/api/admin/v1/model-catalog/route-policies/{policyId}/targets` | 添加策略的渠道路由目标 |
+| `DELETE` | `/api/admin/v1/model-catalog/route-targets/{id}` | 删除渠道路由目标 |
 
 ## 模型运行时
 
