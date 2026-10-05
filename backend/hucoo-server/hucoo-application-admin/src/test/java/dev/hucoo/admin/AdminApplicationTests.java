@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
@@ -28,6 +29,20 @@ class AdminApplicationTests {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Test
+    void shouldUseOneStandardTraceInHeaderResultAndBusinessError() throws Exception {
+        String trace = "0123456789abcdef0123456789abcdef";
+        String parent = "00-" + trace + "-0123456789abcdef-01";
+        mockMvc.perform(get("/api/admin/v1/tenants").header("traceparent", parent).header("X-Trace-Id", "legacy"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-Trace-Id", trace))
+                .andExpect(jsonPath("$.traceId").value(trace));
+        mockMvc.perform(get("/api/admin/v1/tenants/999999999999999999").header("traceparent", parent))
+                .andExpect(status().isNotFound())
+                .andExpect(header().string("X-Trace-Id", trace))
+                .andExpect(jsonPath("$.traceId").value(trace));
+    }
 
     @Test
     void contextLoads() {

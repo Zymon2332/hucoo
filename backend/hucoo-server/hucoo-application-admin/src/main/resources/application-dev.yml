@@ -14,7 +14,3 @@ agent-platform:
     type: ${HUCOO_FILE_STORAGE_TYPE:local}
     local:
       root: ${HUCOO_FILE_LOCAL_ROOT:./data/files}
-
-logging:
-  level:
-    dev.hucoo: DEBUG

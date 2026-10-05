@@ -1,1 +1,2 @@
 dev.hucoo.component.security.config.SecurityAutoConfiguration
+dev.hucoo.component.security.config.UserContextAutoConfiguration

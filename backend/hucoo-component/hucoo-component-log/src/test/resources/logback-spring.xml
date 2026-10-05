@@ -1,0 +1,1 @@
+<configuration><include resource="dev/hucoo/component/log/logback-shared.xml"/></configuration>

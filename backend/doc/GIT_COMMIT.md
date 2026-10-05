@@ -49,6 +49,7 @@ scope 使用模块名或组件名，与项目结构对应。常用 scope：
 - `component-security`
 - `component-cache`
 - `component-database`
+- `component-log`
 - `component-observability`
 - `component-test`
 - `gateway-server`
@@ -181,7 +182,7 @@ module.exports = {
     'scope-enum': [2, 'always', [
       'commons-api', 'commons-dto', 'commons-util', 'commons-exception',
       'dependencies-bom', 'component-web', 'component-security',
-      'component-cache', 'component-database', 'component-observability',
+      'component-cache', 'component-database', 'component-log', 'component-observability',
       'component-test', 'gateway-server', 'module-tenant', 'module-identity',
       'module-model-governance', 'module-tool-mcp', 'module-agent',
       'module-project', 'module-billing', 'module-audit', 'module-security',

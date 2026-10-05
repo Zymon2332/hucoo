@@ -71,5 +71,4 @@ management:
 
 logging:
   level:
-    dev.hucoo: INFO
     org.springframework.cloud.gateway: INFO

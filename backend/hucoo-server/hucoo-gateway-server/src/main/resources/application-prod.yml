@@ -10,7 +10,3 @@ management:
   endpoint:
     health:
       show-details: always
-
-logging:
-  level:
-    dev.hucoo: INFO

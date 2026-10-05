@@ -15,6 +15,7 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 
 import dev.hucoo.commons.dto.Result;
+import dev.hucoo.commons.api.PlatformConstants;
 import dev.hucoo.commons.exception.CommonErrorCode;
 import dev.hucoo.commons.util.JsonUtil;
 import dev.hucoo.commons.util.StringUtil;
@@ -77,7 +78,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         byte[] bytes = StringUtil.defaultIfBlank(
-                JsonUtil.toJson(Result.fail(CommonErrorCode.UNAUTHORIZED.getCode(), message)), "{}")
+                JsonUtil.toJson(Result.fail(CommonErrorCode.UNAUTHORIZED.getCode(), message)
+                        .withTraceId(response.getHeaders().getFirst(PlatformConstants.TRACE_ID_HEADER))), "{}")
                 .getBytes(StandardCharsets.UTF_8);
         DataBuffer buffer = response.bufferFactory().wrap(bytes);
         return response.writeWith(Mono.just(buffer));

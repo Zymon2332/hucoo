@@ -1,0 +1,3 @@
+dev.hucoo.component.log.config.LogAutoConfiguration
+dev.hucoo.component.log.config.ServletLogAutoConfiguration
+dev.hucoo.component.log.config.ReactiveLogAutoConfiguration

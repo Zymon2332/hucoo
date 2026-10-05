@@ -178,6 +178,13 @@ agent-platform:
     circuit-window-seconds: 60
     circuit-open-seconds: 30
     low-balance-factor: 0.5
+  model-governance:
+    vault:
+      key-id: ${HUCOO_MODEL_VAULT_KEY_ID:model-master}
+      active-version: v1
+      keys:
+        # Base64 编码的 32 字节随机主密钥；历史版本密钥由安全配置中心保留。
+        v1: ${HUCOO_MODEL_VAULT_KEY_V1:MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTE=}
 
 management:
   endpoints:
@@ -211,7 +218,3 @@ springdoc:
   api-docs:
     enabled: ${agent-platform.swagger.enabled:true}
     path: /v3/api-docs
-
-logging:
-  level:
-    dev.hucoo: INFO

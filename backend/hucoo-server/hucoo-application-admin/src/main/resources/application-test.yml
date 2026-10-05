@@ -17,7 +17,3 @@ agent-platform:
     auto-create-bucket: true
     local:
       root: ${java.io.tmpdir}/hucoo-file-test
-
-logging:
-  level:
-    dev.hucoo: INFO

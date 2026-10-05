@@ -23,6 +23,7 @@ import dev.hucoo.audit.infrastructure.OperationLogInterceptor;
 import dev.hucoo.audit.infrastructure.mapper.AuditLogMapper;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import dev.hucoo.component.log.context.TaskContext;
 
 @Configuration(proxyBeanMethods = false)
 @EnableScheduling
@@ -55,8 +56,8 @@ public class OperationLogModuleConfig {
     @Bean
     public OperationLogPublisher operationLogPublisher(AuditLogApplicationService service,
                                                         ThreadPoolExecutor executor,
-                                                        ObjectProvider<MeterRegistry> meterRegistry) {
-        return new OperationLogPublisherImpl(service, executor, meterRegistry);
+                                                        ObjectProvider<MeterRegistry> meterRegistry, TaskContext taskContext) {
+        return new OperationLogPublisherImpl(service, executor, meterRegistry, taskContext);
     }
 
     @Bean

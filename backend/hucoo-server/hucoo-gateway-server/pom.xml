@@ -18,6 +18,10 @@
     <dependencies>
         <dependency>
             <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-component-log</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
             <artifactId>hucoo-commons-api</artifactId>
         </dependency>
         <dependency>

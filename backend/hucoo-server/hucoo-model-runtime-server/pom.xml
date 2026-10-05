@@ -14,6 +14,15 @@
     <description>Hucoo 模型运行时服务</description>
     <dependencies>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-component-log</artifactId>
+        </dependency>
+        <dependency>
             <groupId>dev.hucoo</groupId>
             <artifactId>hucoo-module-model-runtime</artifactId>
         </dependency>

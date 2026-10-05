@@ -15,6 +15,7 @@ import dev.hucoo.commons.util.IdGenerator;
 import dev.hucoo.component.database.tenant.CurrentTenantContext;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import dev.hucoo.component.log.context.TaskContext;
 
 public class OperationLogPublisherImpl implements OperationLogPublisher {
 
@@ -22,20 +23,22 @@ public class OperationLogPublisherImpl implements OperationLogPublisher {
 
     private final AuditLogApplicationService auditLogApplicationService;
     private final ThreadPoolExecutor executor;
+    private final TaskContext taskContext;
     private final ObjectProvider<MeterRegistry> meterRegistry;
 
     public OperationLogPublisherImpl(AuditLogApplicationService auditLogApplicationService,
                                      ThreadPoolExecutor executor,
-                                     ObjectProvider<MeterRegistry> meterRegistry) {
+                                     ObjectProvider<MeterRegistry> meterRegistry, TaskContext taskContext) {
         this.auditLogApplicationService = auditLogApplicationService;
         this.executor = executor;
+        this.taskContext = taskContext;
         this.meterRegistry = meterRegistry;
     }
 
     @Override
     public void publish(OperationLogEvent event) {
         try {
-            executor.execute(() -> persist(event));
+            executor.execute(taskContext.task("audit.persist", () -> persist(event)));
         } catch (RejectedExecutionException ex) {
             increment("audit.operation.log.dropped");
             log.warn("operation log queue is full, dropping event: action={}, uri={}",

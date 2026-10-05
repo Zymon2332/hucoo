@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 /**
  * Shared in-process executor for long-running administrative jobs.
@@ -18,9 +19,21 @@ public final class AsyncJobExecutor {
     private static final Map<String, AsyncJobDTO> JOBS = new ConcurrentHashMap<>();
     private static final Map<String, AsyncJobTask> TASKS = new ConcurrentHashMap<>();
     private static final CopyOnWriteArrayList<AsyncJobListener> LISTENERS = new CopyOnWriteArrayList<>();
+    private static volatile UnaryOperator<Runnable> taskDecorator = UnaryOperator.identity();
     private static volatile Supplier<String> tenantSupplier = () -> "000000";
 
     private AsyncJobExecutor() {
+    }
+
+    public static synchronized UnaryOperator<Runnable> setTaskDecorator(UnaryOperator<Runnable> decorator) {
+        UnaryOperator<Runnable> previous = taskDecorator;
+        taskDecorator = java.util.Objects.requireNonNull(decorator);
+        return previous;
+    }
+
+    public static synchronized void restoreTaskDecorator(UnaryOperator<Runnable> expected,
+                                                          UnaryOperator<Runnable> previous) {
+        if (taskDecorator == expected) taskDecorator = previous;
     }
 
     public static void registerListener(AsyncJobListener listener) {
@@ -55,7 +68,7 @@ public final class AsyncJobExecutor {
         JOBS.put(job.getJobId(), job);
         TASKS.put(job.getJobId(), task);
         LISTENERS.forEach(listener -> listener.created(job));
-        EXECUTOR.submit(() -> run(job, task));
+        EXECUTOR.submit(taskDecorator.apply(() -> run(job, task)));
         return job;
     }
 
@@ -85,7 +98,7 @@ public final class AsyncJobExecutor {
         job.setCancelRequested(false);
         job.setProgress(0);
         update(job, AsyncJobStatus.PENDING, 0, "任务重试已提交");
-        EXECUTOR.submit(() -> run(job, task));
+        EXECUTOR.submit(taskDecorator.apply(() -> run(job, task)));
         return job;
     }
 

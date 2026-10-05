@@ -16,6 +16,10 @@
     <description>审计日志、数据保留、DLP 与合规</description>
 
     <dependencies>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-component-log</artifactId>
+        </dependency>
                 <dependency>
                     <groupId>io.swagger.core.v3</groupId>
                     <artifactId>swagger-annotations-jakarta</artifactId>

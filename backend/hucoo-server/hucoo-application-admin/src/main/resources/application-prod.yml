@@ -71,7 +71,3 @@ management:
         enabled: true
     nacos-config:
       enabled: true
-
-logging:
-  level:
-    dev.hucoo: INFO
