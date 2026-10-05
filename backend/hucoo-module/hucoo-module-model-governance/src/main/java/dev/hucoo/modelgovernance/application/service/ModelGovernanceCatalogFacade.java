@@ -10,12 +10,18 @@ import dev.hucoo.modelgovernance.api.dto.ModelProviderCreateRequest;
 import dev.hucoo.modelgovernance.api.dto.ModelProviderDTO;
 import dev.hucoo.modelgovernance.api.dto.RoutingRuleCreateRequest;
 import dev.hucoo.modelgovernance.api.dto.RoutingRuleDTO;
+import dev.hucoo.modelgovernance.api.dto.ModelChannelCreateRequest;
+import dev.hucoo.modelgovernance.api.dto.ModelChannelDTO;
 
 public interface ModelGovernanceCatalogFacade {
     PageResult<ModelProviderDTO> pageProviders(ModelDefinitionQueryRequest request);
     ModelProviderDTO createProvider(ModelProviderCreateRequest request);
     ModelProviderDTO updateProvider(Long id, ModelProviderCreateRequest request);
     boolean deleteProvider(Long id);
+    PageResult<ModelChannelDTO> pageChannels(Long providerId, ModelDefinitionQueryRequest request);
+    ModelChannelDTO createChannel(Long providerId, ModelChannelCreateRequest request);
+    ModelChannelDTO updateChannel(Long id, ModelChannelCreateRequest request);
+    boolean deleteChannel(Long id);
     PageResult<CustomModelRegistrationDTO> pageCustom(ModelDefinitionQueryRequest request);
     CustomModelRegistrationDTO createCustom(CustomModelRegistrationCreateRequest request);
     CustomModelRegistrationDTO updateCustom(Long id, CustomModelRegistrationCreateRequest request);

@@ -21,6 +21,8 @@ import dev.hucoo.commons.dto.AsyncJobExecutor;
 import dev.hucoo.modelgovernance.api.dto.ModelDefinitionCreateRequest;
 import dev.hucoo.modelgovernance.api.dto.ModelDefinitionDTO;
 import dev.hucoo.modelgovernance.api.dto.ModelDefinitionQueryRequest;
+import dev.hucoo.modelgovernance.api.dto.ModelChannelCreateRequest;
+import dev.hucoo.modelgovernance.api.dto.ModelChannelDTO;
 import dev.hucoo.modelgovernance.api.dto.CustomModelRegistrationCreateRequest;
 import dev.hucoo.modelgovernance.api.dto.CustomModelRegistrationDTO;
 import dev.hucoo.modelgovernance.api.dto.ModelKeyCreateRequest;
@@ -30,7 +32,6 @@ import dev.hucoo.modelgovernance.api.dto.ModelProviderDTO;
 import dev.hucoo.modelgovernance.api.dto.RoutingRuleCreateRequest;
 import dev.hucoo.modelgovernance.api.dto.RoutingRuleDTO;
 import dev.hucoo.modelgovernance.application.service.ModelDefinitionApplicationService;
-import dev.hucoo.modelgovernance.application.service.ModelGovernanceCatalogService;
 import dev.hucoo.modelgovernance.application.service.ModelGovernanceCatalogFacade;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,8 +69,17 @@ public class ModelDefinitionController {
 
     @Operation(summary = "模型供应商列表")
     @GetMapping("/providers")
+    @RequirePermission("model-provider:read")
     public Result<PageResult<ModelProviderDTO>> providerPage(ModelDefinitionQueryRequest request) {
         return Result.ok(modelGovernanceCatalogService.pageProviders(request));
+    }
+
+    @Operation(summary = "供应商渠道列表")
+    @GetMapping("/providers/{providerId}/channels")
+    @RequirePermission("model-channel:read")
+    public Result<PageResult<ModelChannelDTO>> channelPage(@PathVariable Long providerId,
+                                                            ModelDefinitionQueryRequest request) {
+        return Result.ok(modelGovernanceCatalogService.pageChannels(providerId, request));
     }
 
     @Operation(summary = "模型密钥列表")
@@ -107,6 +117,37 @@ public class ModelDefinitionController {
     @RequirePermission("model-provider:delete")
     public Result<Boolean> deleteProvider(@PathVariable Long id) {
         return Result.ok(modelGovernanceCatalogService.deleteProvider(id));
+    }
+
+    @Operation(summary = "创建供应商渠道")
+    @PostMapping("/providers/{providerId}/channels")
+    @RequirePermission("model-channel:create")
+    public Result<ModelChannelDTO> createChannel(@PathVariable Long providerId,
+                                                  @Valid @RequestBody ModelChannelCreateRequest request) {
+        return Result.ok(modelGovernanceCatalogService.createChannel(providerId, request));
+    }
+
+    @Operation(summary = "更新供应商渠道")
+    @PutMapping("/channels/{id}")
+    @RequirePermission("model-channel:update")
+    public Result<ModelChannelDTO> updateChannel(@PathVariable Long id,
+                                                  @Valid @RequestBody ModelChannelCreateRequest request) {
+        return Result.ok(modelGovernanceCatalogService.updateChannel(id, request));
+    }
+
+    @Operation(summary = "更新供应商渠道完整配置")
+    @PatchMapping("/channels/{id}")
+    @RequirePermission("model-channel:update")
+    public Result<ModelChannelDTO> patchChannel(@PathVariable Long id,
+                                                 @Valid @RequestBody ModelChannelCreateRequest request) {
+        return Result.ok(modelGovernanceCatalogService.updateChannel(id, request));
+    }
+
+    @Operation(summary = "删除供应商渠道")
+    @DeleteMapping("/channels/{id}")
+    @RequirePermission("model-channel:delete")
+    public Result<Boolean> deleteChannel(@PathVariable Long id) {
+        return Result.ok(modelGovernanceCatalogService.deleteChannel(id));
     }
 
     @Operation(summary = "注册自定义模型")

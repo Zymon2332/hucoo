@@ -1,0 +1,18 @@
+package dev.hucoo.modelgovernance.api.dto;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import dev.hucoo.commons.dto.BaseDTO;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class ModelVersionCapabilityDTO extends BaseDTO {
+    @io.swagger.v3.oas.annotations.media.Schema(description = "关联的模型版本 ID")
+    private Long modelVersionId;
+    @io.swagger.v3.oas.annotations.media.Schema(description = "能力编码，例如 STREAMING、TOOL_CALLING、JSON_MODE、VISION_INPUT")
+    private String capabilityCode;
+    @io.swagger.v3.oas.annotations.media.Schema(description = "是否支持该能力：1 支持，0 不支持")
+    private Integer supported;
+    @io.swagger.v3.oas.annotations.media.Schema(description = "能力约束 JSON，例如最大图片数量或工具数量")
+    private String constraintJson;
+}

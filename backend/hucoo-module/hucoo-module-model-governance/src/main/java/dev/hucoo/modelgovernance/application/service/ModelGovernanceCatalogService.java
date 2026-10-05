@@ -15,6 +15,8 @@ import dev.hucoo.commons.util.StringUtil;
 import dev.hucoo.modelgovernance.api.dto.CustomModelRegistrationCreateRequest;
 import dev.hucoo.modelgovernance.api.dto.CustomModelRegistrationDTO;
 import dev.hucoo.modelgovernance.api.dto.ModelDefinitionQueryRequest;
+import dev.hucoo.modelgovernance.api.dto.ModelChannelCreateRequest;
+import dev.hucoo.modelgovernance.api.dto.ModelChannelDTO;
 import dev.hucoo.modelgovernance.api.dto.ModelKeyCreateRequest;
 import dev.hucoo.modelgovernance.api.dto.ModelKeyDTO;
 import dev.hucoo.modelgovernance.api.dto.ModelProviderCreateRequest;
@@ -23,68 +25,38 @@ import dev.hucoo.modelgovernance.api.dto.RoutingRuleCreateRequest;
 import dev.hucoo.modelgovernance.api.dto.RoutingRuleDTO;
 import dev.hucoo.modelgovernance.domain.entity.CustomModelRegistration;
 import dev.hucoo.modelgovernance.domain.entity.ModelKey;
-import dev.hucoo.modelgovernance.domain.entity.ModelProvider;
 import dev.hucoo.modelgovernance.domain.entity.RoutingRule;
 import dev.hucoo.modelgovernance.infrastructure.mapper.CustomModelRegistrationMapper;
 import dev.hucoo.modelgovernance.infrastructure.mapper.ModelKeyMapper;
-import dev.hucoo.modelgovernance.infrastructure.mapper.ModelProviderMapper;
 import dev.hucoo.modelgovernance.infrastructure.mapper.RoutingRuleMapper;
 
 @Service
 @ConditionalOnProperty(prefix = "agent-platform.persistence", name = "enabled", havingValue = "true")
 public class ModelGovernanceCatalogService implements ModelGovernanceCatalogFacade {
 
-    private final ModelProviderMapper providerMapper;
+    private final ModelProviderChannelService channels;
     private final CustomModelRegistrationMapper customMapper;
     private final ModelKeyMapper keyMapper;
     private final RoutingRuleMapper routingMapper;
 
-    public ModelGovernanceCatalogService(ModelProviderMapper providerMapper,
+    public ModelGovernanceCatalogService(ModelProviderChannelService channels,
                                          CustomModelRegistrationMapper customMapper,
                                          ModelKeyMapper keyMapper,
                                          RoutingRuleMapper routingMapper) {
-        this.providerMapper = providerMapper;
+        this.channels = channels;
         this.customMapper = customMapper;
         this.keyMapper = keyMapper;
         this.routingMapper = routingMapper;
     }
 
-    public PageResult<ModelProviderDTO> pageProviders(ModelDefinitionQueryRequest request) {
-        LambdaQueryWrapper<ModelProvider> wrapper = new LambdaQueryWrapper<>();
-        if (StringUtil.isNotBlank(request.getKeyword())) {
-            wrapper.like(ModelProvider::getProviderCode, request.getKeyword())
-                    .or().like(ModelProvider::getProviderName, request.getKeyword());
-        }
-        wrapper.orderByDesc(ModelProvider::getId);
-        IPage<ModelProvider> page = providerMapper.selectPage(new Page<>(request.resolvePageNum(), request.resolvePageSize()), wrapper);
-        return PageResult.of(page.getRecords().stream().map(this::toDto).toList(), page.getTotal(), page.getCurrent(), page.getSize());
-    }
-
-    public ModelProviderDTO createProvider(ModelProviderCreateRequest request) {
-        ModelProvider entity = new ModelProvider();
-        entity.setProviderCode(request.getProviderCode());
-        entity.setProviderName(request.getProviderName());
-        entity.setEndpoint(request.getEndpoint());
-        entity.setStatus(request.getStatus() == null ? 1 : request.getStatus());
-        providerMapper.insert(entity);
-        return toDto(entity);
-    }
-
-    public ModelProviderDTO updateProvider(Long id, ModelProviderCreateRequest request) {
-        ModelProvider entity = providerMapper.selectById(id);
-        if (entity == null) throw new ResourceNotFoundException("ModelProvider", id);
-        entity.setProviderCode(request.getProviderCode());
-        entity.setProviderName(request.getProviderName());
-        entity.setEndpoint(request.getEndpoint());
-        if (request.getStatus() != null) entity.setStatus(request.getStatus());
-        providerMapper.updateById(entity);
-        return toDto(entity);
-    }
-
-    public boolean deleteProvider(Long id) {
-        if (providerMapper.selectById(id) == null) throw new ResourceNotFoundException("ModelProvider", id);
-        return providerMapper.deleteById(id) > 0;
-    }
+    @Override public PageResult<ModelProviderDTO> pageProviders(ModelDefinitionQueryRequest request) { return channels.pageProviders(request); }
+    @Override public ModelProviderDTO createProvider(ModelProviderCreateRequest request) { return channels.createProvider(request); }
+    @Override public ModelProviderDTO updateProvider(Long id, ModelProviderCreateRequest request) { return channels.updateProvider(id, request); }
+    @Override public boolean deleteProvider(Long id) { return channels.deleteProvider(id); }
+    @Override public PageResult<ModelChannelDTO> pageChannels(Long providerId, ModelDefinitionQueryRequest request) { return channels.pageChannels(providerId, request); }
+    @Override public ModelChannelDTO createChannel(Long providerId, ModelChannelCreateRequest request) { return channels.createChannel(providerId, request); }
+    @Override public ModelChannelDTO updateChannel(Long id, ModelChannelCreateRequest request) { return channels.updateChannel(id, request); }
+    @Override public boolean deleteChannel(Long id) { return channels.deleteChannel(id); }
 
     public PageResult<CustomModelRegistrationDTO> pageCustom(ModelDefinitionQueryRequest request) {
         LambdaQueryWrapper<CustomModelRegistration> wrapper = new LambdaQueryWrapper<>();
@@ -206,7 +178,6 @@ public class ModelGovernanceCatalogService implements ModelGovernanceCatalogFaca
         return routingMapper.deleteById(id) > 0;
     }
 
-    private ModelProviderDTO toDto(ModelProvider entity) { ModelProviderDTO dto = new ModelProviderDTO(); dto.setId(entity.getId()); dto.setCreatedAt(entity.getCreatedAt()); dto.setUpdatedAt(entity.getUpdatedAt()); dto.setProviderCode(entity.getProviderCode()); dto.setProviderName(entity.getProviderName()); dto.setEndpoint(entity.getEndpoint()); dto.setStatus(entity.getStatus()); return dto; }
     private CustomModelRegistrationDTO toDto(CustomModelRegistration entity) { CustomModelRegistrationDTO dto = new CustomModelRegistrationDTO(); dto.setId(entity.getId()); dto.setCreatedAt(entity.getCreatedAt()); dto.setUpdatedAt(entity.getUpdatedAt()); dto.setModelCode(entity.getModelCode()); dto.setProviderId(entity.getProviderId()); dto.setVisibility(entity.getVisibility()); dto.setApprovalStatus(entity.getApprovalStatus()); dto.setEndpoint(entity.getEndpoint()); dto.setKeyRef(entity.getKeyRef()); dto.setKeyFingerprint(entity.getKeyFingerprint()); dto.setStatus(entity.getStatus()); return dto; }
     private ModelKeyDTO toDto(ModelKey entity) { ModelKeyDTO dto = new ModelKeyDTO(); dto.setId(entity.getId()); dto.setCreatedAt(entity.getCreatedAt()); dto.setUpdatedAt(entity.getUpdatedAt()); dto.setKeyName(entity.getKeyName()); dto.setKeyRef(entity.getKeyRef()); dto.setKeyFingerprint(entity.getKeyFingerprint()); dto.setStatus(entity.getStatus()); dto.setExpiresAt(entity.getExpiresAt()); dto.setLastRotatedAt(entity.getLastRotatedAt()); return dto; }
     private RoutingRuleDTO toDto(RoutingRule entity) { RoutingRuleDTO dto = new RoutingRuleDTO(); dto.setId(entity.getId()); dto.setCreatedAt(entity.getCreatedAt()); dto.setUpdatedAt(entity.getUpdatedAt()); dto.setRuleName(entity.getRuleName()); dto.setPrimaryModel(entity.getPrimaryModel()); dto.setFallbackModel(entity.getFallbackModel()); dto.setPriority(entity.getPriority()); dto.setFallbackCondition(entity.getFallbackCondition()); dto.setCostOwner(entity.getCostOwner()); dto.setStatus(entity.getStatus()); return dto; }
