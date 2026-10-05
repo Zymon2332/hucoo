@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.stereotype.Service;
 
@@ -32,13 +31,13 @@ import dev.hucoo.modelruntime.infrastructure.adapter.ModelProviderAdapter;
 import dev.hucoo.modelruntime.infrastructure.adapter.ProviderFailure;
 import dev.hucoo.modelruntime.infrastructure.adapter.ProviderRequest;
 import dev.hucoo.modelruntime.infrastructure.secret.SecretStore;
+import dev.hucoo.commons.util.IdGenerator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
 public class ModelInvocationService implements ModelRuntimeFacade {
     private final Map<Long, ModelAccessAccount> accounts = new ConcurrentHashMap<>();
-    private final Map<String, AtomicLong> sequence = new ConcurrentHashMap<>();
     private final SecretStore secretStore;
     private final List<ModelProviderAdapter> adapters;
     private final ModelRuntimeProperties properties;
@@ -168,7 +167,8 @@ public class ModelInvocationService implements ModelRuntimeFacade {
 
     @Override
     public AccountDTO createAccount(AccountCreateRequest request) {
-        long id = sequence.computeIfAbsent(request.getModelCode(), ignored -> new AtomicLong()).incrementAndGet();
+        // ID 必须在整个运行时实例内唯一，不能按模型分别从 1 开始，否则不同模型会互相覆盖账户。
+        long id = IdGenerator.nextId();
         String keyRef = "runtime:model-key:" + id;
         String fingerprint = request.getKeyFingerprint();
         if (fingerprint == null || fingerprint.isBlank()) fingerprint = sha256(request.getApiKey());

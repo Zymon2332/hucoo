@@ -53,6 +53,19 @@ class ModelInvocationServiceTest {
         assertNotNull(service.preview("deepseek-chat"));
     }
 
+    @Test
+    void differentModelsCannotOverwriteEachOthersAccounts() {
+        ModelInvocationService service = new ModelInvocationService(new InMemorySecretStore(), List.of(), new ModelRuntimeProperties());
+        AccountCreateRequest first = account("first", 1);
+        AccountCreateRequest second = account("second", 1);
+        second.setModelCode("another-model");
+        var a = service.createAccount(first);
+        var b = service.createAccount(second);
+        org.junit.jupiter.api.Assertions.assertNotEquals(a.getId(), b.getId());
+        assertEquals(1, service.accounts("deepseek-chat").size());
+        assertEquals(1, service.accounts("another-model").size());
+    }
+
     private AccountCreateRequest account(String name, int weight) {
         AccountCreateRequest request = new AccountCreateRequest();
         request.setProviderCode("deepseek");

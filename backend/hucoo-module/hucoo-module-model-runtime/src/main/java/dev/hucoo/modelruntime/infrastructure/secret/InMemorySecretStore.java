@@ -4,8 +4,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 
 @Component
+@ConditionalOnMissingBean(SecretStore.class)
 public class InMemorySecretStore implements SecretStore {
     private final ConcurrentMap<String, String> values = new ConcurrentHashMap<>();
 
