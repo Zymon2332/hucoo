@@ -2,7 +2,7 @@
 
 > 本文件由 `doc/openapi.json` 生成，请勿手工编辑；变更接口后先跑 `./scripts/export-openapi.sh` 再提交。
 
-接口总数 **274**，路径 **184** 条，资源分组 **34** 个。
+接口总数 **287**，路径 **188** 条，资源分组 **37** 个。
 所有路径前缀为 `/api/admin/v1`，响应统一为 `Result<T>` 信封（见 [API_CONTRACT.md](API_CONTRACT.md)）。
 
 ## Agent 模板
@@ -47,6 +47,32 @@
 | `GET` | `/api/admin/v1/webhooks/deliveries` |  |
 | `GET` | `/api/admin/v1/webhooks/events` |  |
 | `POST` | `/api/admin/v1/webhooks/events/{id}/replay` |  |
+
+## 字典类型
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/admin/v1/dictionary-types` | 分页查询字典类型 |
+| `POST` | `/api/admin/v1/dictionary-types` | 创建字典类型 |
+| `DELETE` | `/api/admin/v1/dictionary-types/{id}` | 删除字典类型及本作用域字典项 |
+| `GET` | `/api/admin/v1/dictionary-types/{id}` | 查询字典类型详情 |
+| `PUT` | `/api/admin/v1/dictionary-types/{id}` | 更新字典类型（含启停） |
+
+## 字典选项
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/admin/v1/dictionaries/{code}/options` | 按编码读取平台与当前租户合并后的可用字典项 |
+
+## 字典项
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/admin/v1/dictionary-types/{typeId}/items` | 分页查询字典项 |
+| `POST` | `/api/admin/v1/dictionary-types/{typeId}/items` | 创建字典项 |
+| `DELETE` | `/api/admin/v1/dictionary-types/{typeId}/items/{itemId}` | 删除字典项；删除覆盖后恢复继承 |
+| `GET` | `/api/admin/v1/dictionary-types/{typeId}/items/{itemId}` | 查询字典项详情 |
+| `PUT` | `/api/admin/v1/dictionary-types/{typeId}/items/{itemId}` | 更新字典项（含启停与排序） |
 
 ## 安全合规资源
 
@@ -105,16 +131,6 @@
 | `GET` | `/api/admin/v1/audit-logs/logs` | 正式审计日志列表 |
 | `GET` | `/api/admin/v1/audit-logs/statistics` | 审计日志 统计信息 |
 | `GET` | `/api/admin/v1/audit-logs/{id}` | 查询审计日志 详情 |
-
-## 平台设置
-
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| `GET` | `/api/admin/v1/settings/license` | 查询 License |
-| `GET` | `/api/admin/v1/settings/nodes` | 查询节点信息 |
-| `GET` | `/api/admin/v1/settings/{group}` | 按分组读取平台设置 |
-| `PATCH` | `/api/admin/v1/settings/{group}/{key}` | 异步更新平台设置 |
-| `POST` | `/api/admin/v1/settings/{group}/{key}/restore` | 异步恢复默认设置 |
 
 ## 异步任务
 
@@ -384,6 +400,18 @@
 | `POST` | `/api/admin/v1/operations/coupons/{id}/activate` | 异步启用优惠券 |
 | `GET` | `/api/admin/v1/operations/tickets` | 工单列表 |
 | `POST` | `/api/admin/v1/operations/tickets/{id}/messages` | 异步发送工单消息 |
+
+## 通用配置
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/api/admin/v1/configs` | 分页查询配置 |
+| `POST` | `/api/admin/v1/configs` | 创建配置 |
+| `GET` | `/api/admin/v1/configs/effective` | 按分组读取生效配置；不传分组返回全部 |
+| `GET` | `/api/admin/v1/configs/effective/{key}` | 按键读取生效配置 |
+| `DELETE` | `/api/admin/v1/configs/{id}` | 删除配置；删除覆盖后恢复继承 |
+| `GET` | `/api/admin/v1/configs/{id}` | 查询配置详情 |
+| `PUT` | `/api/admin/v1/configs/{id}` | 更新配置（含启停） |
 
 ## 集成应用
 

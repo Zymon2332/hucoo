@@ -309,7 +309,7 @@
 - `/integrations`、`/webhooks`
 - `/operations`
 - `/experiments`
-- `/settings`
+- `/dictionary-types`、`/dictionaries/{code}/options`、`/configs`（通用业务模块，替代旧 `/settings`）
 
 ### 模块建议
 

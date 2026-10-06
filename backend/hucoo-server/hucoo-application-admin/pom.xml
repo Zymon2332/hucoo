@@ -16,6 +16,7 @@
     <description>Hucoo Agent Platform Admin application entry point</description>
 
     <dependencies>
+        <dependency><groupId>dev.hucoo</groupId><artifactId>hucoo-module-common</artifactId></dependency>
         <dependency>
             <groupId>dev.hucoo</groupId>
             <artifactId>hucoo-component-log</artifactId>

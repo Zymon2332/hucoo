@@ -14,6 +14,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>hucoo-module-common</module>
         <module>hucoo-module-tenant</module>
         <module>hucoo-module-tenant-client</module>
         <module>hucoo-module-identity</module>

@@ -10,6 +10,7 @@ import dev.hucoo.modelruntime.client.ModelRuntimeFeignClient;
 
 @SpringBootApplication(scanBasePackages = {
         "dev.hucoo.admin",
+        "dev.hucoo.common",
         "dev.hucoo.tenant",
         "dev.hucoo.identity",
         "dev.hucoo.modelgovernance",
@@ -27,19 +28,12 @@ import dev.hucoo.modelruntime.client.ModelRuntimeFeignClient;
         GitProviderClient.class,
         ModelRuntimeFeignClient.class
 })
-// 扫描范围需要显式列出：MyBatis 的 Mapper 不是全部位于 <module>.infrastructure.mapper，
-// 还有三个例外包：
-//   - dev.hucoo.identity.infrastructure.auth.mapper   （统一认证的 6 个 Mapper）
-//   - dev.hucoo.admin.operations.infrastructure       （运营域 6 个 Mapper）
-//   - dev.hucoo.admin.platformconfig.infrastructure   （平台配置 2 个 Mapper）
-// 只写 **.infrastructure.mapper 会漏掉这 14 个，导致 persistence.enabled=true 时认证等模块装配失败。
-// 注意不能放宽成 **.infrastructure：那会把 infrastructure.repository 下的普通仓储接口
-// 也当成 Mapper 注册，运行时报 Invalid bound statement。
+// 业务与组件的 Mapper 统一由 Admin 注册；两个旧包保留历史结构例外。
+// 不扫描 infrastructure.repository，避免将普通仓储接口注册为 Mapper。
 @MapperScan({
         "dev.hucoo.**.infrastructure.mapper",
         "dev.hucoo.identity.infrastructure.auth.mapper",
-        "dev.hucoo.admin.operations.infrastructure",
-        "dev.hucoo.admin.platformconfig.infrastructure"
+        "dev.hucoo.admin.operations.infrastructure"
 })
 public class AdminApplication {
 

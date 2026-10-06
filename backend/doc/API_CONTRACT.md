@@ -86,7 +86,7 @@
   脚本通过 `OpenApiContractExportTests` 在 `test` profile 下导出（关闭 Nacos 与安全拦截、Mock 持久化），无需外部依赖。
   `doc/openapi.json` 可提交并可在 `git diff` 中审阅接口变更，前端据此生成类型即可，不需要人工同步字段。
 
-当前基线：OpenAPI `3.1.0`，163 条路径 / 237 个操作 / 167 个 schema。
+当前基线：OpenAPI `3.1.0`，188 条路径 / 287 个操作 / 228 个 schema。
 
 ### 二进制下载
 
@@ -153,3 +153,7 @@ cd backend
 - **经网关访问会 404**：`hucoo-gateway-server` 同时配置了 `Path=/api/admin/**` 与全局 `StripPrefix=2`，
   会把 `/api/admin/v1/auth/login` 改写成 `/v1/auth/login` 再转发，而管理端只注册了 `/api/admin/v1/**`。
   本地联调请直连 `http://localhost:8081`；若要走网关，需要调整该路由的前缀剥离层数。
+
+## 字典与通用配置
+
+字典、配置接口及平台默认与租户覆盖规则见 [COMMON_MODULE.md](COMMON_MODULE.md)。PUT 与 DELETE 必须提供当前 `version`；所有旧 `/settings/**` 路由已移除，历史数据保留。
