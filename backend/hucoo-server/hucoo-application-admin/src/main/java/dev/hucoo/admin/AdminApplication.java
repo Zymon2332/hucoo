@@ -3,6 +3,10 @@ package dev.hucoo.admin;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+
+import dev.hucoo.integration.client.GitProviderClient;
+import dev.hucoo.modelruntime.client.ModelRuntimeFeignClient;
 
 @SpringBootApplication(scanBasePackages = {
         "dev.hucoo.admin",
@@ -18,6 +22,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "dev.hucoo.monitoring",
         "dev.hucoo.integration",
         "dev.hucoo.file"
+})
+@EnableFeignClients(basePackageClasses = {
+        GitProviderClient.class,
+        ModelRuntimeFeignClient.class
 })
 // 扫描范围需要显式列出：MyBatis 的 Mapper 不是全部位于 <module>.infrastructure.mapper，
 // 还有三个例外包：

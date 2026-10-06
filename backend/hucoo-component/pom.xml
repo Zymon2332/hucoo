@@ -22,6 +22,7 @@
         <module>hucoo-component-log</module>
         <module>hucoo-component-observability</module>
         <module>hucoo-component-storage</module>
+        <module>hucoo-component-remote</module>
         <module>hucoo-component-test</module>
     </modules>
 

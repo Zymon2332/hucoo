@@ -32,54 +32,11 @@ public class MockModelDefinitionApplicationService extends ServiceImpl<ModelDefi
 
     public MockModelDefinitionApplicationService(ModelDefinitionConverter modelDefinitionConverter) {
         this.modelDefinitionConverter = modelDefinitionConverter;
-        seed();
     }
 
     @Override
     public ModelDefinitionConverter converter() {
         return modelDefinitionConverter;
-    }
-
-    private void seed() {
-        ModelDefinition sample1 = new ModelDefinition();
-        sample1.setId(IdGenerator.nextId());
-        sample1.setModelCode("MODEL_CODE-001");
-        sample1.setModelName("示例数据1");
-        sample1.setProvider("provider-001");
-        sample1.setModelType("standard");
-        sample1.setEndpoint("endpoint-001");
-        sample1.setStatus(1);
-        sample1.setCreatedAt(LocalDateTime.now().minusDays(1));
-        sample1.setUpdatedAt(LocalDateTime.now().minusDays(1));
-        sample1.setDeleted(0);
-        store.put(sample1.getId(), sample1);
-
-        ModelDefinition sample2 = new ModelDefinition();
-        sample2.setId(IdGenerator.nextId());
-        sample2.setModelCode("MODEL_CODE-002");
-        sample2.setModelName("示例数据2");
-        sample2.setProvider("provider-002");
-        sample2.setModelType("standard");
-        sample2.setEndpoint("endpoint-002");
-        sample2.setStatus(2);
-        sample2.setCreatedAt(LocalDateTime.now().minusDays(2));
-        sample2.setUpdatedAt(LocalDateTime.now().minusDays(2));
-        sample2.setDeleted(0);
-        store.put(sample2.getId(), sample2);
-
-        ModelDefinition sample3 = new ModelDefinition();
-        sample3.setId(IdGenerator.nextId());
-        sample3.setModelCode("MODEL_CODE-003");
-        sample3.setModelName("示例数据3");
-        sample3.setProvider("provider-003");
-        sample3.setModelType("standard");
-        sample3.setEndpoint("endpoint-003");
-        sample3.setStatus(3);
-        sample3.setCreatedAt(LocalDateTime.now().minusDays(3));
-        sample3.setUpdatedAt(LocalDateTime.now().minusDays(3));
-        sample3.setDeleted(0);
-        store.put(sample3.getId(), sample3);
-
     }
 
     @Override

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import dev.hucoo.commons.api.PlatformConstants;
 import dev.hucoo.commons.dto.Result;
-import dev.hucoo.integration.infrastructure.client.GitProviderClient;
+import dev.hucoo.integration.client.GitProviderClient;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -156,6 +156,11 @@
             </dependency>
             <dependency>
                 <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-component-remote</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
                 <artifactId>hucoo-component-test</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -222,6 +227,71 @@
             <dependency>
                 <groupId>dev.hucoo</groupId>
                 <artifactId>hucoo-module-file</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-agent-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-audit-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-billing-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-file-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-identity-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-integration-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-model-governance-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-model-runtime-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-monitoring-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-project-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-security-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-tenant-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.hucoo</groupId>
+                <artifactId>hucoo-module-tool-mcp-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

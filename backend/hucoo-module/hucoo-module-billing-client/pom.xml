@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>dev.hucoo</groupId>
+        <artifactId>hucoo-module</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>hucoo-module-billing-client</artifactId>
+    <name>hucoo-module-billing-client</name>
+    <description>billing module remote client contracts</description>
+    <dependencies>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-component-remote</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-commons-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-commons-dto</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-component-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

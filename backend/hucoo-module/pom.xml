@@ -15,18 +15,31 @@
 
     <modules>
         <module>hucoo-module-tenant</module>
+        <module>hucoo-module-tenant-client</module>
         <module>hucoo-module-identity</module>
+        <module>hucoo-module-identity-client</module>
         <module>hucoo-module-model-governance</module>
+        <module>hucoo-module-model-governance-client</module>
         <module>hucoo-module-model-runtime</module>
+        <module>hucoo-module-model-runtime-client</module>
         <module>hucoo-module-tool-mcp</module>
+        <module>hucoo-module-tool-mcp-client</module>
         <module>hucoo-module-agent</module>
+        <module>hucoo-module-agent-client</module>
         <module>hucoo-module-project</module>
+        <module>hucoo-module-project-client</module>
         <module>hucoo-module-billing</module>
+        <module>hucoo-module-billing-client</module>
         <module>hucoo-module-audit</module>
+        <module>hucoo-module-audit-client</module>
         <module>hucoo-module-security</module>
+        <module>hucoo-module-security-client</module>
         <module>hucoo-module-monitoring</module>
+        <module>hucoo-module-monitoring-client</module>
         <module>hucoo-module-integration</module>
+        <module>hucoo-module-integration-client</module>
         <module>hucoo-module-file</module>
+        <module>hucoo-module-file-client</module>
     </modules>
 
     <properties>

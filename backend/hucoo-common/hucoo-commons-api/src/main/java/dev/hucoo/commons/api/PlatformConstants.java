@@ -12,6 +12,8 @@ public final class PlatformConstants {
     public static final String REQUEST_ID_HEADER = "X-Request-Id";
     public static final String IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
     public static final String TENANT_ID_HEADER = "X-Tenant-Id";
+    public static final String USER_ID_HEADER = "X-User-Id";
+    public static final String USER_NAME_HEADER = "X-User-Name";
     public static final String AUTHORIZATION_HEADER = "Authorization";
     public static final String BEARER_PREFIX = "Bearer ";
     public static final long DEFAULT_PAGE_NUM = 1L;

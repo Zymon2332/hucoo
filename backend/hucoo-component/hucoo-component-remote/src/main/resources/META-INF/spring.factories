@@ -1,0 +1,1 @@
+org.springframework.boot.EnvironmentPostProcessor=dev.hucoo.component.remote.config.RemoteEnvironmentPostProcessor
