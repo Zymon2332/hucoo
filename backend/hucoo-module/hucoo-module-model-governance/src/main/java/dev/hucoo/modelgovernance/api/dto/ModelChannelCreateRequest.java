@@ -8,10 +8,14 @@ import lombok.Data;
 @Data
 public class ModelChannelCreateRequest implements Serializable {
 
-    @NotBlank private String channelCode;
-    @NotBlank private String channelName;
-    @NotBlank private String protocolType;
-    @NotBlank private String endpoint;
+    @NotBlank
+    private String channelCode;
+    @NotBlank
+    private String channelName;
+    @NotBlank
+    private String protocolType;
+    @NotBlank
+    private String endpoint;
     private String basePath;
     private String region;
     private String networkZone;

@@ -281,33 +281,43 @@ public class ModelCatalogSeedLoader {
 
     // ------------------------------------------------------------ 种子文件结构
 
-    /** 与 model-catalog/model-catalog-seed.json 一一对应的只读结构。 */
+    /**
+     * 与 model-catalog/model-catalog-seed.json 一一对应的只读结构。
+     */
     public record Catalog(String catalogVersion, String currency, Long unitScale, String source,
-                          List<Provider> providers, List<Model> models, List<Binding> bindings) { }
+                          List<Provider> providers, List<Model> models, List<Binding> bindings) {
+    }
 
     public record Provider(String providerCode, String providerName, String providerType, String endpoint,
                            String website, String documentationUrl, String defaultRegion, String complianceLevel,
-                           String description, List<Channel> channels) { }
+                           String description, List<Channel> channels) {
+    }
 
     public record Channel(String channelCode, String channelName, String protocolType, String endpoint,
                           String basePath, String region, String networkZone, String authType,
                           Object protocolConfigJson, Long requestTimeoutMs, Long streamTimeoutMs,
-                          String status, String healthStatus) { }
+                          String status, String healthStatus) {
+    }
 
     public record Model(String modelCode, String vendorProviderCode, String modelName, String modelFamily,
                         String modelType, String sourceType, String description, Object metadataJson,
-                        Version version, List<Capability> capabilities) { }
+                        Version version, List<Capability> capabilities) {
+    }
 
     public record Version(String versionCode, Long contextWindow, Long maxInputTokens, Long maxOutputTokens,
                           List<String> inputModalities, List<String> outputModalities, Object defaultParameters,
-                          String releasedAt, String deprecatedAt) { }
+                          String releasedAt, String deprecatedAt) {
+    }
 
-    public record Capability(String capabilityCode, Integer supported, Object constraintJson) { }
+    public record Capability(String capabilityCode, Integer supported, Object constraintJson) {
+    }
 
     public record Binding(String providerCode, String channelCode, String bindingKey, String modelCode,
                           String providerModelCode, String modelAlias, Integer defaultWeight, Integer priority,
-                          Integer maxConcurrency, List<Price> prices) { }
+                          Integer maxConcurrency, List<Price> prices) {
+    }
 
     public record Price(String billingDimension, Long tierStart, Long tierEnd, BigDecimal unitPrice,
-                        Long unitScale, String currency) { }
+                        Long unitScale, String currency) {
+    }
 }

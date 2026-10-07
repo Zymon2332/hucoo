@@ -2,6 +2,7 @@ package dev.hucoo.modelgovernance.api.dto;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+
 import lombok.Data;
 import jakarta.validation.constraints.*;
 

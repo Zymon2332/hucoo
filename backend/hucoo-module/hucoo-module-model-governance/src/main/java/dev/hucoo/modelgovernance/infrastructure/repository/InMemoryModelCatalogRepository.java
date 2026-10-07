@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.springframework.stereotype.Repository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import dev.hucoo.commons.util.IdGenerator;
@@ -28,11 +29,18 @@ public class InMemoryModelCatalogRepository implements ModelCatalogRepository {
     public synchronized <T> T inTransaction(java.util.function.Supplier<T> operation) {
         Map<Class<?>, Map<Long, String>> snapshot = new java.util.HashMap<>();
         tables.forEach((type, values) -> snapshot.put(type, new ConcurrentHashMap<>(values)));
-        try { return operation.get(); }
-        catch (RuntimeException error) { tables.clear(); tables.putAll(snapshot); throw error; }
+        try {
+            return operation.get();
+        } catch (RuntimeException error) {
+            tables.clear();
+            tables.putAll(snapshot);
+            throw error;
+        }
     }
 
-    private Map<Long, String> table(Class<?> type) { return tables.computeIfAbsent(type, ignored -> new ConcurrentHashMap<>()); }
+    private Map<Long, String> table(Class<?> type) {
+        return tables.computeIfAbsent(type, ignored -> new ConcurrentHashMap<>());
+    }
 
     @Override
     public synchronized <T extends BaseEntity> T find(Class<T> type, Long id) {
@@ -42,7 +50,9 @@ public class InMemoryModelCatalogRepository implements ModelCatalogRepository {
     }
 
     @Override
-    public synchronized <T extends BaseEntity> T lock(Class<T> type, Long id) { return find(type, id); }
+    public synchronized <T extends BaseEntity> T lock(Class<T> type, Long id) {
+        return find(type, id);
+    }
 
     @Override
     public synchronized <T extends BaseEntity> List<T> list(Class<T> type) {

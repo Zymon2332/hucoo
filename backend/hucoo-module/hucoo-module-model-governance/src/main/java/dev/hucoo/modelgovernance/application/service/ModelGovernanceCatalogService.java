@@ -49,18 +49,50 @@ public class ModelGovernanceCatalogService implements ModelGovernanceCatalogFaca
         this.routingMapper = routingMapper;
     }
 
-    @Override public PageResult<ModelProviderDTO> pageProviders(ModelDefinitionQueryRequest request) { return channels.pageProviders(request); }
-    @Override public ModelProviderDTO createProvider(ModelProviderCreateRequest request) { return channels.createProvider(request); }
-    @Override public ModelProviderDTO updateProvider(Long id, ModelProviderCreateRequest request) { return channels.updateProvider(id, request); }
-    @Override public boolean deleteProvider(Long id) { return channels.deleteProvider(id); }
-    @Override public PageResult<ModelChannelDTO> pageChannels(Long providerId, ModelDefinitionQueryRequest request) { return channels.pageChannels(providerId, request); }
-    @Override public ModelChannelDTO createChannel(Long providerId, ModelChannelCreateRequest request) { return channels.createChannel(providerId, request); }
-    @Override public ModelChannelDTO updateChannel(Long id, ModelChannelCreateRequest request) { return channels.updateChannel(id, request); }
-    @Override public boolean deleteChannel(Long id) { return channels.deleteChannel(id); }
+    @Override
+    public PageResult<ModelProviderDTO> pageProviders(ModelDefinitionQueryRequest request) {
+        return channels.pageProviders(request);
+    }
+
+    @Override
+    public ModelProviderDTO createProvider(ModelProviderCreateRequest request) {
+        return channels.createProvider(request);
+    }
+
+    @Override
+    public ModelProviderDTO updateProvider(Long id, ModelProviderCreateRequest request) {
+        return channels.updateProvider(id, request);
+    }
+
+    @Override
+    public boolean deleteProvider(Long id) {
+        return channels.deleteProvider(id);
+    }
+
+    @Override
+    public PageResult<ModelChannelDTO> pageChannels(Long providerId, ModelDefinitionQueryRequest request) {
+        return channels.pageChannels(providerId, request);
+    }
+
+    @Override
+    public ModelChannelDTO createChannel(Long providerId, ModelChannelCreateRequest request) {
+        return channels.createChannel(providerId, request);
+    }
+
+    @Override
+    public ModelChannelDTO updateChannel(Long id, ModelChannelCreateRequest request) {
+        return channels.updateChannel(id, request);
+    }
+
+    @Override
+    public boolean deleteChannel(Long id) {
+        return channels.deleteChannel(id);
+    }
 
     public PageResult<CustomModelRegistrationDTO> pageCustom(ModelDefinitionQueryRequest request) {
         LambdaQueryWrapper<CustomModelRegistration> wrapper = new LambdaQueryWrapper<>();
-        if (StringUtil.isNotBlank(request.getKeyword())) wrapper.like(CustomModelRegistration::getModelCode, request.getKeyword());
+        if (StringUtil.isNotBlank(request.getKeyword()))
+            wrapper.like(CustomModelRegistration::getModelCode, request.getKeyword());
         wrapper.orderByDesc(CustomModelRegistration::getId);
         IPage<CustomModelRegistration> page = customMapper.selectPage(new Page<>(request.resolvePageNum(), request.resolvePageSize()), wrapper);
         return PageResult.of(page.getRecords().stream().map(this::toDto).toList(), page.getTotal(), page.getCurrent(), page.getSize());
@@ -178,7 +210,48 @@ public class ModelGovernanceCatalogService implements ModelGovernanceCatalogFaca
         return routingMapper.deleteById(id) > 0;
     }
 
-    private CustomModelRegistrationDTO toDto(CustomModelRegistration entity) { CustomModelRegistrationDTO dto = new CustomModelRegistrationDTO(); dto.setId(entity.getId()); dto.setCreatedAt(entity.getCreatedAt()); dto.setUpdatedAt(entity.getUpdatedAt()); dto.setModelCode(entity.getModelCode()); dto.setProviderId(entity.getProviderId()); dto.setVisibility(entity.getVisibility()); dto.setApprovalStatus(entity.getApprovalStatus()); dto.setEndpoint(entity.getEndpoint()); dto.setKeyRef(entity.getKeyRef()); dto.setKeyFingerprint(entity.getKeyFingerprint()); dto.setStatus(entity.getStatus()); return dto; }
-    private ModelKeyDTO toDto(ModelKey entity) { ModelKeyDTO dto = new ModelKeyDTO(); dto.setId(entity.getId()); dto.setCreatedAt(entity.getCreatedAt()); dto.setUpdatedAt(entity.getUpdatedAt()); dto.setKeyName(entity.getKeyName()); dto.setKeyRef(entity.getKeyRef()); dto.setKeyFingerprint(entity.getKeyFingerprint()); dto.setStatus(entity.getStatus()); dto.setExpiresAt(entity.getExpiresAt()); dto.setLastRotatedAt(entity.getLastRotatedAt()); return dto; }
-    private RoutingRuleDTO toDto(RoutingRule entity) { RoutingRuleDTO dto = new RoutingRuleDTO(); dto.setId(entity.getId()); dto.setCreatedAt(entity.getCreatedAt()); dto.setUpdatedAt(entity.getUpdatedAt()); dto.setRuleName(entity.getRuleName()); dto.setPrimaryModel(entity.getPrimaryModel()); dto.setFallbackModel(entity.getFallbackModel()); dto.setPriority(entity.getPriority()); dto.setFallbackCondition(entity.getFallbackCondition()); dto.setCostOwner(entity.getCostOwner()); dto.setStatus(entity.getStatus()); return dto; }
+    private CustomModelRegistrationDTO toDto(CustomModelRegistration entity) {
+        CustomModelRegistrationDTO dto = new CustomModelRegistrationDTO();
+        dto.setId(entity.getId());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
+        dto.setModelCode(entity.getModelCode());
+        dto.setProviderId(entity.getProviderId());
+        dto.setVisibility(entity.getVisibility());
+        dto.setApprovalStatus(entity.getApprovalStatus());
+        dto.setEndpoint(entity.getEndpoint());
+        dto.setKeyRef(entity.getKeyRef());
+        dto.setKeyFingerprint(entity.getKeyFingerprint());
+        dto.setStatus(entity.getStatus());
+        return dto;
+    }
+
+    private ModelKeyDTO toDto(ModelKey entity) {
+        ModelKeyDTO dto = new ModelKeyDTO();
+        dto.setId(entity.getId());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
+        dto.setKeyName(entity.getKeyName());
+        dto.setKeyRef(entity.getKeyRef());
+        dto.setKeyFingerprint(entity.getKeyFingerprint());
+        dto.setStatus(entity.getStatus());
+        dto.setExpiresAt(entity.getExpiresAt());
+        dto.setLastRotatedAt(entity.getLastRotatedAt());
+        return dto;
+    }
+
+    private RoutingRuleDTO toDto(RoutingRule entity) {
+        RoutingRuleDTO dto = new RoutingRuleDTO();
+        dto.setId(entity.getId());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
+        dto.setRuleName(entity.getRuleName());
+        dto.setPrimaryModel(entity.getPrimaryModel());
+        dto.setFallbackModel(entity.getFallbackModel());
+        dto.setPriority(entity.getPriority());
+        dto.setFallbackCondition(entity.getFallbackCondition());
+        dto.setCostOwner(entity.getCostOwner());
+        dto.setStatus(entity.getStatus());
+        return dto;
+    }
 }

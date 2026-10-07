@@ -10,11 +10,31 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @TableName("ap_routing_rule")
 public class RoutingRule extends BaseEntity {
-    @TableField("rule_name") private String ruleName;
-    @TableField("primary_model") private String primaryModel;
-    @TableField("fallback_model") private String fallbackModel;
-    @TableField("priority") private Integer priority;
-    @TableField("fallback_condition") private String fallbackCondition;
-    @TableField("cost_owner") private String costOwner;
-    @TableField("status") private Integer status;
+    /** 路由规则名称。 */
+    @TableField("rule_name")
+    private String ruleName;
+
+    /** 首选模型编码。 */
+    @TableField("primary_model")
+    private String primaryModel;
+
+    /** 首选模型不可用时的降级模型编码。 */
+    @TableField("fallback_model")
+    private String fallbackModel;
+
+    /** 规则优先级，数值越小越优先。 */
+    @TableField("priority")
+    private Integer priority;
+
+    /** 触发降级的条件表达式。 */
+    @TableField("fallback_condition")
+    private String fallbackCondition;
+
+    /** 路由成本归属方。 */
+    @TableField("cost_owner")
+    private String costOwner;
+
+    /** 规则启用状态：1 启用，0 停用。 */
+    @TableField("status")
+    private Integer status;
 }

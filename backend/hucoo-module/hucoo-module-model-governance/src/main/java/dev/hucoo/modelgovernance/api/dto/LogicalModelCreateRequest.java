@@ -1,6 +1,7 @@
 package dev.hucoo.modelgovernance.api.dto;
 
 import java.io.Serializable;
+
 import lombok.Data;
 import jakarta.validation.constraints.*;
 

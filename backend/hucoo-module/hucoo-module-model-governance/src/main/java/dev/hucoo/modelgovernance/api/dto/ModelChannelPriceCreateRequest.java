@@ -3,6 +3,7 @@ package dev.hucoo.modelgovernance.api.dto;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 import java.io.Serializable;
+
 import lombok.Data;
 import jakarta.validation.constraints.*;
 

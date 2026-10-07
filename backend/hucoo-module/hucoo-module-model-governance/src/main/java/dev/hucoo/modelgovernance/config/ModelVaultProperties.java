@@ -2,6 +2,7 @@ package dev.hucoo.modelgovernance.config;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

@@ -1,6 +1,7 @@
 package dev.hucoo.modelgovernance.api.dto;
 
 import java.math.BigDecimal;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import dev.hucoo.commons.dto.BaseDTO;

@@ -2,13 +2,15 @@ package dev.hucoo.modelgovernance.api.dto;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class ModelCredentialCreateRequest implements Serializable {
-    @NotBlank private String credentialName;
+    @NotBlank
+    private String credentialName;
     @io.swagger.v3.oas.annotations.media.Schema(description = "凭证类型：API_KEY、OAUTH2、MTLS、NONE")
     private String credentialType = "API_KEY";
     @NotBlank

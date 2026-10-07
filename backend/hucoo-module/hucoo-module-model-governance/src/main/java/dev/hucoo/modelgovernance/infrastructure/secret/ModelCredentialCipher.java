@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import dev.hucoo.commons.exception.BusinessException;
@@ -17,7 +18,9 @@ import dev.hucoo.commons.exception.CommonErrorCode;
 import dev.hucoo.modelgovernance.config.ModelVaultProperties;
 import dev.hucoo.modelgovernance.domain.entity.ModelCredential;
 
-/** AES-256-GCM；持久化模式必须显式提供主密钥，主密钥本身不会写入数据库。 */
+/**
+ * AES-256-GCM；持久化模式必须显式提供主密钥，主密钥本身不会写入数据库。
+ */
 @Component
 public class ModelCredentialCipher {
     private final ModelVaultProperties properties;
@@ -29,7 +32,8 @@ public class ModelCredentialCipher {
         this.properties = properties;
         properties.getKeys().forEach((version, encoded) -> {
             byte[] decoded = Base64.getDecoder().decode(encoded);
-            if (decoded.length != 32) throw new IllegalStateException("模型保险箱主密钥必须是 Base64 编码的 32 字节密钥");
+            if (decoded.length != 32)
+                throw new IllegalStateException("模型保险箱主密钥必须是 Base64 编码的 32 字节密钥");
             keys.put(version, new SecretKeySpec(decoded, "AES"));
         });
         if (!keys.containsKey(properties.getActiveVersion())) {
@@ -78,7 +82,10 @@ public class ModelCredentialCipher {
     }
 
     public String fingerprint(String secret) {
-        try { return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(secret.getBytes(StandardCharsets.UTF_8))); }
-        catch (GeneralSecurityException error) { throw new IllegalStateException(error); }
+        try {
+            return java.util.HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(secret.getBytes(StandardCharsets.UTF_8)));
+        } catch (GeneralSecurityException error) {
+            throw new IllegalStateException(error);
+        }
     }
 }

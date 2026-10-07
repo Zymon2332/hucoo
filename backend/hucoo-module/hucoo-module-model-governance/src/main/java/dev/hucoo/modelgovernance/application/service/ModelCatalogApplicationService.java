@@ -3,6 +3,7 @@ package dev.hucoo.modelgovernance.application.service;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 import java.util.List;
+
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import dev.hucoo.commons.dto.PageResult;
@@ -17,6 +18,7 @@ import dev.hucoo.modelgovernance.application.converter.ModelCatalogConverter;
 import dev.hucoo.modelgovernance.domain.ModelCatalogRepository;
 import dev.hucoo.modelgovernance.domain.entity.*;
 import dev.hucoo.modelgovernance.infrastructure.secret.ModelCredentialCipher;
+
 import static dev.hucoo.modelgovernance.domain.ModelConfigurationValidator.*;
 
 @Service
@@ -38,7 +40,9 @@ public class ModelCatalogApplicationService {
         return PageResult.of(models.subList(start, end).stream().map(converter::toDto).toList(), models.size(), page, size);
     }
 
-    public LogicalModelDTO model(Long id) { return converter.toDto(required(LogicalModel.class, id)); }
+    public LogicalModelDTO model(Long id) {
+        return converter.toDto(required(LogicalModel.class, id));
+    }
 
     public LogicalModelDTO createModel(LogicalModelCreateRequest request) {
         LogicalModel entity = converter.toEntity(request);
@@ -136,7 +140,7 @@ public class ModelCatalogApplicationService {
         ModelChannelBinding binding = required(ModelChannelBinding.class, id);
         required(ModelChannel.class, request.getChannelId());
         require(binding.getChannelId().equals(request.getChannelId())
-                || repository.list(ModelRouteTarget.class).stream().noneMatch(target -> id.equals(target.getBindingId())),
+                        || repository.list(ModelRouteTarget.class).stream().noneMatch(target -> id.equals(target.getBindingId())),
                 "映射已有路由目标，请先删除目标再更换渠道");
         validateBinding(request);
         require(repository.list(ModelChannelBinding.class).stream().noneMatch(item -> !item.getId().equals(id) && item.getModelVersionId().equals(binding.getModelVersionId()) && item.getChannelId().equals(request.getChannelId()) && item.getProviderModelCode().equals(request.getProviderModelCode())), "模型渠道映射已存在");
@@ -221,9 +225,18 @@ public class ModelCatalogApplicationService {
         return converter.toDto(repository.save(price));
     }
 
-    private boolean overlaps(Long a, Long b, Long c, Long d) { return (b == null || c <= b) && (d == null || a <= d); }
-    private boolean overlaps(LocalDateTime a, LocalDateTime b, LocalDateTime c, LocalDateTime d) { return (b == null || c.isBefore(b)) && (d == null || a.isBefore(d)); }
-    public void deletePrice(Long id) { required(ModelChannelPrice.class, id); repository.delete(ModelChannelPrice.class, id); }
+    private boolean overlaps(Long a, Long b, Long c, Long d) {
+        return (b == null || c <= b) && (d == null || a <= d);
+    }
+
+    private boolean overlaps(LocalDateTime a, LocalDateTime b, LocalDateTime c, LocalDateTime d) {
+        return (b == null || c.isBefore(b)) && (d == null || a.isBefore(d));
+    }
+
+    public void deletePrice(Long id) {
+        required(ModelChannelPrice.class, id);
+        repository.delete(ModelChannelPrice.class, id);
+    }
 
     public List<ModelVisibilityGrantDTO> grants(Long modelId) {
         required(LogicalModel.class, modelId);
@@ -244,7 +257,11 @@ public class ModelCatalogApplicationService {
         unique(ModelVisibilityGrant.class, item -> item.getModelId().equals(modelId) && item.getScopeType().equals(grant.getScopeType()) && item.getScopeId().equals(grant.getScopeId()), "该范围已有可见性授权");
         return converter.toDto(repository.save(grant));
     }
-    public void deleteGrant(Long id) { required(ModelVisibilityGrant.class, id); repository.delete(ModelVisibilityGrant.class, id); }
+
+    public void deleteGrant(Long id) {
+        required(ModelVisibilityGrant.class, id);
+        repository.delete(ModelVisibilityGrant.class, id);
+    }
 
     public List<ModelCredentialDTO> credentials(Long channelId) {
         required(ModelChannel.class, channelId);
@@ -260,7 +277,8 @@ public class ModelCatalogApplicationService {
         credential.setCredentialType(choice(request.getCredentialType(), "API_KEY", "API_KEY", "OAUTH2", "MTLS"));
         credential.setOwnerScopeType(choice(request.getOwnerScopeType(), "TENANT", "PLATFORM", "TENANT", "PROJECT", "USER"));
         credential.setOwnerScopeId(request.getOwnerScopeId());
-        if ("TENANT".equals(credential.getOwnerScopeType())) credential.setOwnerScopeId(CurrentTenantContext.getTenantId());
+        if ("TENANT".equals(credential.getOwnerScopeType()))
+            credential.setOwnerScopeId(CurrentTenantContext.getTenantId());
         require(!"PLATFORM".equals(credential.getOwnerScopeType()) || "000000".equals(CurrentTenantContext.getTenantId()), "租户凭证不能属于平台范围");
         require(!List.of("PROJECT", "USER").contains(credential.getOwnerScopeType()) || credential.getOwnerScopeId() != null && !credential.getOwnerScopeId().isBlank(), "项目或用户凭证必须指定所有者");
         validateExpiry(request.getExpiresAt());
@@ -303,9 +321,13 @@ public class ModelCatalogApplicationService {
         return converter.toDto(repository.save(credential));
     }
 
-    private void validateExpiry(LocalDateTime expiresAt) { require(expiresAt == null || expiresAt.isAfter(LocalDateTime.now()), "凭证过期时间必须在未来"); }
+    private void validateExpiry(LocalDateTime expiresAt) {
+        require(expiresAt == null || expiresAt.isAfter(LocalDateTime.now()), "凭证过期时间必须在未来");
+    }
 
-    /** 只能由具有独立审核权限的接口触发；配置编辑接口不接收审批状态。 */
+    /**
+     * 只能由具有独立审核权限的接口触发；配置编辑接口不接收审批状态。
+     */
     public Object approve(String resource, Long id) {
         return switch (resource) {
             case "models" -> {
@@ -352,6 +374,11 @@ public class ModelCatalogApplicationService {
         require(repository.list(type).stream().noneMatch(duplicate), message);
     }
 
-    private ModelChannelDTO channelDto(ModelChannel channel) { return converter.toDto(channel); }
-    private ModelProviderDTO providerDto(ModelProvider provider) { return converter.toDto(provider); }
+    private ModelChannelDTO channelDto(ModelChannel channel) {
+        return converter.toDto(channel);
+    }
+
+    private ModelProviderDTO providerDto(ModelProvider provider) {
+        return converter.toDto(provider);
+    }
 }

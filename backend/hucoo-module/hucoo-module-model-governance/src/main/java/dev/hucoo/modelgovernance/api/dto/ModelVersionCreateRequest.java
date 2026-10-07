@@ -2,6 +2,7 @@ package dev.hucoo.modelgovernance.api.dto;
 
 import java.time.LocalDateTime;
 import java.io.Serializable;
+
 import lombok.Data;
 import jakarta.validation.constraints.*;
 

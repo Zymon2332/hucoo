@@ -78,7 +78,7 @@ public class ModelDefinitionController {
     @GetMapping("/providers/{providerId}/channels")
     @RequirePermission("model-channel:read")
     public Result<PageResult<ModelChannelDTO>> channelPage(@PathVariable Long providerId,
-                                                            ModelDefinitionQueryRequest request) {
+                                                           ModelDefinitionQueryRequest request) {
         return Result.ok(modelGovernanceCatalogService.pageChannels(providerId, request));
     }
 
@@ -123,7 +123,7 @@ public class ModelDefinitionController {
     @PostMapping("/providers/{providerId}/channels")
     @RequirePermission("model-channel:create")
     public Result<ModelChannelDTO> createChannel(@PathVariable Long providerId,
-                                                  @Valid @RequestBody ModelChannelCreateRequest request) {
+                                                 @Valid @RequestBody ModelChannelCreateRequest request) {
         return Result.ok(modelGovernanceCatalogService.createChannel(providerId, request));
     }
 
@@ -131,7 +131,7 @@ public class ModelDefinitionController {
     @PutMapping("/channels/{id}")
     @RequirePermission("model-channel:update")
     public Result<ModelChannelDTO> updateChannel(@PathVariable Long id,
-                                                  @Valid @RequestBody ModelChannelCreateRequest request) {
+                                                 @Valid @RequestBody ModelChannelCreateRequest request) {
         return Result.ok(modelGovernanceCatalogService.updateChannel(id, request));
     }
 
@@ -139,7 +139,7 @@ public class ModelDefinitionController {
     @PatchMapping("/channels/{id}")
     @RequirePermission("model-channel:update")
     public Result<ModelChannelDTO> patchChannel(@PathVariable Long id,
-                                                 @Valid @RequestBody ModelChannelCreateRequest request) {
+                                                @Valid @RequestBody ModelChannelCreateRequest request) {
         return Result.ok(modelGovernanceCatalogService.updateChannel(id, request));
     }
 
@@ -237,7 +237,8 @@ public class ModelDefinitionController {
             String check = checks[i];
             boolean passed = switch (check) {
                 case "connectivity", "timeout" -> model.getEndpoint() != null && !model.getEndpoint().isBlank();
-                case "streaming", "tool_calling", "json_mode", "multimodal" -> model.getStatus() != null && model.getStatus() > 0;
+                case "streaming", "tool_calling", "json_mode", "multimodal" ->
+                        model.getStatus() != null && model.getStatus() > 0;
                 default -> model.getModelCode() != null && !model.getModelCode().isBlank();
             };
             context.result(check, Map.of("status", passed ? "PASSED" : "FAILED"));

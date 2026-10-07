@@ -1,8 +1,10 @@
 package dev.hucoo.modelgovernance;
 
 import static org.junit.jupiter.api.Assertions.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -37,20 +39,28 @@ class ModelCatalogApplicationServiceTest {
         providers = new ModelProviderChannelService(repository, converter);
         routes = new ModelRouteConfigurationService(repository, converter);
         ModelProviderCreateRequest provider = new ModelProviderCreateRequest();
-        provider.setProviderCode("test-provider"); provider.setProviderName("供应商"); provider.setWebsite("https://example.com");
+        provider.setProviderCode("test-provider");
+        provider.setProviderName("供应商");
+        provider.setWebsite("https://example.com");
         providerId = providers.createProvider(provider).getId();
         channelId = providers.createChannel(providerId, channelRequest("primary")).getId();
         LogicalModelCreateRequest model = modelRequest("test-model");
         modelId = catalog.createModel(model).getId();
         ModelVersionCreateRequest version = new ModelVersionCreateRequest();
-        version.setVersionCode("v1"); version.setContextWindow(8192L); version.setMaxOutputTokens(1024L);
+        version.setVersionCode("v1");
+        version.setContextWindow(8192L);
+        version.setMaxOutputTokens(1024L);
         versionId = catalog.createVersion(modelId, version).getId();
         ModelChannelBindingCreateRequest binding = new ModelChannelBindingCreateRequest();
-        binding.setChannelId(channelId); binding.setProviderModelCode("provider-model-v1");
+        binding.setChannelId(channelId);
+        binding.setProviderModelCode("provider-model-v1");
         bindingId = catalog.createBinding(versionId, binding).getId();
     }
 
-    @AfterEach void clearTenant() { CurrentTenantContext.clear(); }
+    @AfterEach
+    void clearTenant() {
+        CurrentTenantContext.clear();
+    }
 
     @Test
     void mockCrudRetainsProviderChannelFieldsAndAppliesPagination() {
@@ -103,7 +113,8 @@ class ModelCatalogApplicationServiceTest {
         providers.updateChannel(channelId, channelRequest("primary"));
         assertThrows(BusinessException.class, () -> catalog.approve("bindings", bindingId));
         ModelVersionCapabilityCreateRequest capability = new ModelVersionCapabilityCreateRequest();
-        capability.setCapabilityCode("TOOL_CALLING"); capability.setSupported(1);
+        capability.setCapabilityCode("TOOL_CALLING");
+        capability.setSupported(1);
         catalog.setCapability(versionId, capability);
         assertEquals("DRAFT", catalog.versions(modelId).get(0).getReleaseStatus());
     }
@@ -145,7 +156,9 @@ class ModelCatalogApplicationServiceTest {
     @Test
     void validatesContextWindowAndProtectsParentsWithReferences() {
         ModelVersionCreateRequest invalid = new ModelVersionCreateRequest();
-        invalid.setVersionCode("bad"); invalid.setContextWindow(100L); invalid.setMaxOutputTokens(101L);
+        invalid.setVersionCode("bad");
+        invalid.setContextWindow(100L);
+        invalid.setMaxOutputTokens(101L);
         assertThrows(BusinessException.class, () -> catalog.createVersion(modelId, invalid));
         assertThrows(BusinessException.class, () -> catalog.deleteModel(modelId));
         assertThrows(BusinessException.class, () -> providers.deleteProvider(providerId));
@@ -160,9 +173,12 @@ class ModelCatalogApplicationServiceTest {
         assertNotEquals(secret, stored.getSecretCiphertext());
         assertEquals(secret, cipher.decrypt(stored));
         String dtoJson = JsonUtil.toJson(created);
-        assertFalse(dtoJson.contains(secret)); assertFalse(dtoJson.contains("ciphertext")); assertFalse(dtoJson.contains("secretNonce"));
+        assertFalse(dtoJson.contains(secret));
+        assertFalse(dtoJson.contains("ciphertext"));
+        assertFalse(dtoJson.contains("secretNonce"));
         ModelCredentialRotateRequest rotation = new ModelCredentialRotateRequest();
-        rotation.setSecret("rotated-secret"); rotation.setReason("定期轮换");
+        rotation.setSecret("rotated-secret");
+        rotation.setReason("定期轮换");
         catalog.rotateCredential(created.getId(), rotation);
         assertEquals("rotated-secret", cipher.decrypt(repository.find(ModelCredential.class, created.getId())));
         assertEquals(1, repository.list(ModelCredentialRotation.class).size());
@@ -184,10 +200,12 @@ class ModelCatalogApplicationServiceTest {
         ModelVaultProperties configured = new ModelVaultProperties();
         configured.getKeys().put("v1", java.util.Base64.getEncoder().encodeToString(new byte[32]));
         ModelCredentialCipher first = new ModelCredentialCipher(configured, true);
-        ModelCredential stored = new ModelCredential(); stored.setChannelId(channelId); stored.setTenantId("tenant-a");
+        ModelCredential stored = new ModelCredential();
+        stored.setChannelId(channelId);
+        stored.setTenantId("tenant-a");
         first.encrypt(stored, "old-secret");
         configured.setActiveVersion("v2");
-        configured.getKeys().put("v2", java.util.Base64.getEncoder().encodeToString(new byte[]{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}));
+        configured.getKeys().put("v2", java.util.Base64.getEncoder().encodeToString(new byte[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}));
         assertEquals("old-secret", new ModelCredentialCipher(configured, true).decrypt(stored));
     }
 
@@ -198,12 +216,14 @@ class ModelCatalogApplicationServiceTest {
         ModelRoutePolicyCreateRequest policyRequest = new ModelRoutePolicyCreateRequest();
         ModelRoutePolicyDTO policy = routes.createPolicy(modelId, policyRequest);
         ModelRouteTargetCreateRequest target = new ModelRouteTargetCreateRequest();
-        target.setBindingId(bindingId); target.setCredentialId(credentialId);
+        target.setBindingId(bindingId);
+        target.setCredentialId(credentialId);
         assertThrows(BusinessException.class, () -> routes.createTarget(policy.getId(), target));
         target.setCredentialId(catalog.createCredential(channelId, credential("right-secret")).getId());
         assertEquals("DISABLED", routes.createTarget(policy.getId(), target).getStatus());
         ModelChannelBindingCreateRequest changeChannel = new ModelChannelBindingCreateRequest();
-        changeChannel.setChannelId(otherChannel); changeChannel.setProviderModelCode("other-model");
+        changeChannel.setChannelId(otherChannel);
+        changeChannel.setProviderModelCode("other-model");
         assertThrows(BusinessException.class, () -> catalog.updateBinding(bindingId, changeChannel));
     }
 
@@ -212,22 +232,46 @@ class ModelCatalogApplicationServiceTest {
         ModelCredentialDTO created = catalog.createCredential(channelId, credential("before"));
         assertThrows(IllegalStateException.class, () -> repository.inTransaction(() -> {
             ModelCredential changed = repository.find(ModelCredential.class, created.getId());
-            cipher.encrypt(changed, "after"); repository.save(changed);
+            cipher.encrypt(changed, "after");
+            repository.save(changed);
             throw new IllegalStateException("写审计失败");
         }));
         assertEquals("before", cipher.decrypt(repository.find(ModelCredential.class, created.getId())));
     }
 
     private LogicalModelCreateRequest modelRequest(String code) {
-        LogicalModelCreateRequest request = new LogicalModelCreateRequest(); request.setModelCode(code); request.setModelName("模型"); request.setModelType("CHAT"); return request;
+        LogicalModelCreateRequest request = new LogicalModelCreateRequest();
+        request.setModelCode(code);
+        request.setModelName("模型");
+        request.setModelType("CHAT");
+        return request;
     }
+
     private ModelChannelCreateRequest channelRequest(String code) {
-        ModelChannelCreateRequest request = new ModelChannelCreateRequest(); request.setChannelCode(code); request.setChannelName("渠道"); request.setProtocolType("OPENAI_COMPATIBLE"); request.setEndpoint("https://api.example.com"); request.setProtocolConfigJson("{\"schemaVersion\":1}"); return request;
+        ModelChannelCreateRequest request = new ModelChannelCreateRequest();
+        request.setChannelCode(code);
+        request.setChannelName("渠道");
+        request.setProtocolType("OPENAI_COMPATIBLE");
+        request.setEndpoint("https://api.example.com");
+        request.setProtocolConfigJson("{\"schemaVersion\":1}");
+        return request;
     }
+
     private ModelCredentialCreateRequest credential(String secret) {
-        ModelCredentialCreateRequest request = new ModelCredentialCreateRequest(); request.setCredentialName("访问凭证"); request.setSecret(secret); return request;
+        ModelCredentialCreateRequest request = new ModelCredentialCreateRequest();
+        request.setCredentialName("访问凭证");
+        request.setSecret(secret);
+        return request;
     }
+
     private ModelChannelPriceCreateRequest price(long start, long end, String from, String to) {
-        ModelChannelPriceCreateRequest request = new ModelChannelPriceCreateRequest(); request.setBillingDimension("INPUT_TOKEN"); request.setTierStart(start); request.setTierEnd(end); request.setUnitPrice(new BigDecimal("1.25")); request.setEffectiveFrom(LocalDateTime.parse(from)); request.setEffectiveTo(LocalDateTime.parse(to)); return request;
+        ModelChannelPriceCreateRequest request = new ModelChannelPriceCreateRequest();
+        request.setBillingDimension("INPUT_TOKEN");
+        request.setTierStart(start);
+        request.setTierEnd(end);
+        request.setUnitPrice(new BigDecimal("1.25"));
+        request.setEffectiveFrom(LocalDateTime.parse(from));
+        request.setEffectiveTo(LocalDateTime.parse(to));
+        return request;
     }
 }

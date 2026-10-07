@@ -3,6 +3,7 @@ package dev.hucoo.modelgovernance.application.service;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import dev.hucoo.commons.dto.PageResult;
@@ -12,9 +13,12 @@ import dev.hucoo.modelgovernance.api.dto.*;
 import dev.hucoo.modelgovernance.application.converter.ModelCatalogConverter;
 import dev.hucoo.modelgovernance.domain.ModelCatalogRepository;
 import dev.hucoo.modelgovernance.domain.entity.*;
+
 import static dev.hucoo.modelgovernance.domain.ModelConfigurationValidator.*;
 
-/** Mock 与数据库模式共用相同的供应商、渠道业务规则。 */
+/**
+ * Mock 与数据库模式共用相同的供应商、渠道业务规则。
+ */
 @Service
 @RequiredArgsConstructor
 public class ModelProviderChannelService {

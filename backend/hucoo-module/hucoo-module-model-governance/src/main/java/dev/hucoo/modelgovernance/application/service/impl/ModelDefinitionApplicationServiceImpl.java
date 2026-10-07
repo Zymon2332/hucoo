@@ -23,7 +23,7 @@ public class ModelDefinitionApplicationServiceImpl extends ServiceImpl<ModelDefi
     private final ModelDefinitionConverter modelDefinitionConverter;
 
     public ModelDefinitionApplicationServiceImpl(ModelDefinitionRepository modelDefinitionRepository,
-                                          ModelDefinitionConverter modelDefinitionConverter) {
+                                                 ModelDefinitionConverter modelDefinitionConverter) {
         this.modelDefinitionRepository = modelDefinitionRepository;
         this.modelDefinitionConverter = modelDefinitionConverter;
     }

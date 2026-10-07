@@ -31,7 +31,9 @@ import dev.hucoo.modelgovernance.infrastructure.bootstrap.ModelCatalogSeedLoader
 import dev.hucoo.modelgovernance.infrastructure.repository.InMemoryModelCatalogRepository;
 import dev.hucoo.modelgovernance.infrastructure.secret.ModelCredentialCipher;
 
-/** 验证 Mock 模式下市面知名供应商与模型目录基线数据可被接口正常读取。 */
+/**
+ * 验证 Mock 模式下市面知名供应商与模型目录基线数据可被接口正常读取。
+ */
 class ModelCatalogSeedLoaderTest {
 
     private InMemoryModelCatalogRepository repository;

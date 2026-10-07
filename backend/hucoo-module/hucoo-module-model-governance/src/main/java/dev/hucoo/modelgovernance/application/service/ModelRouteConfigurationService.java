@@ -3,6 +3,7 @@ package dev.hucoo.modelgovernance.application.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import dev.hucoo.commons.exception.ResourceNotFoundException;
@@ -12,9 +13,12 @@ import dev.hucoo.modelgovernance.api.dto.*;
 import dev.hucoo.modelgovernance.application.converter.ModelCatalogConverter;
 import dev.hucoo.modelgovernance.domain.ModelCatalogRepository;
 import dev.hucoo.modelgovernance.domain.entity.*;
+
 import static dev.hucoo.modelgovernance.domain.ModelConfigurationValidator.*;
 
-/** 路由配置属于控制平面，调用执行器通过独立契约接入。 */
+/**
+ * 路由配置属于控制平面，调用执行器通过独立契约接入。
+ */
 @Service
 @RequiredArgsConstructor
 public class ModelRouteConfigurationService {
@@ -28,7 +32,8 @@ public class ModelRouteConfigurationService {
 
     public ModelRoutePolicyDTO createPolicy(Long modelId, ModelRoutePolicyCreateRequest request) {
         LogicalModel model = required(LogicalModel.class, modelId);
-        if (request.getModelVersionId() != null) require(required(ModelVersion.class, request.getModelVersionId()).getModelId().equals(modelId), "路由锁定版本必须属于当前逻辑模型");
+        if (request.getModelVersionId() != null)
+            require(required(ModelVersion.class, request.getModelVersionId()).getModelId().equals(modelId), "路由锁定版本必须属于当前逻辑模型");
         ModelRoutePolicy policy = converter.toEntity(request);
         policy.setModelId(modelId);
         policy.setModelCode(model.getModelCode());
@@ -96,10 +101,23 @@ public class ModelRouteConfigurationService {
         return converter.toDto(repository.save(target));
     }
 
-    public void deleteTarget(Long id) { required(ModelRouteTarget.class, id); repository.delete(ModelRouteTarget.class, id); }
+    public void deleteTarget(Long id) {
+        required(ModelRouteTarget.class, id);
+        repository.delete(ModelRouteTarget.class, id);
+    }
 
-    private int positive(Integer value, int fallback) { int result = value == null ? fallback : value; require(result > 0, "重试、超时、熔断与权重配置必须大于零"); return result; }
-    private long positive(Long value, long fallback) { long result = value == null ? fallback : value; require(result > 0, "超时配置必须大于零"); return result; }
+    private int positive(Integer value, int fallback) {
+        int result = value == null ? fallback : value;
+        require(result > 0, "重试、超时、熔断与权重配置必须大于零");
+        return result;
+    }
+
+    private long positive(Long value, long fallback) {
+        long result = value == null ? fallback : value;
+        require(result > 0, "超时配置必须大于零");
+        return result;
+    }
+
     private <T extends BaseEntity> T required(Class<T> type, Long id) {
         T entity = repository.find(type, id);
         if (entity == null) throw new ResourceNotFoundException(type.getSimpleName(), id);

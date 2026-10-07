@@ -2,6 +2,7 @@ package dev.hucoo.modelgovernance.infrastructure.repository;
 
 import java.util.List;
 import java.util.Map;
+
 import org.springframework.stereotype.Repository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -49,7 +50,9 @@ public class MybatisModelCatalogRepository implements ModelCatalogRepository {
     }
 
     @Override
-    public <T> T inTransaction(java.util.function.Supplier<T> operation) { return transactions.execute(status -> operation.get()); }
+    public <T> T inTransaction(java.util.function.Supplier<T> operation) {
+        return transactions.execute(status -> operation.get());
+    }
 
     @SuppressWarnings("unchecked")
     private <T extends BaseEntity> BaseMapper<T> mapper(Class<T> type) {
@@ -83,9 +86,11 @@ public class MybatisModelCatalogRepository implements ModelCatalogRepository {
             entity.setTenantId(CurrentTenantContext.getTenantId());
             mapper.insert(entity);
         } else {
-            if (find(entity.getClass(), entity.getId()) == null) throw new ResourceNotFoundException(entity.getClass().getSimpleName(), entity.getId());
+            if (find(entity.getClass(), entity.getId()) == null)
+                throw new ResourceNotFoundException(entity.getClass().getSimpleName(), entity.getId());
             entity.setTenantId(CurrentTenantContext.getTenantId());
-            if (mapper.updateById(entity) == 0) throw new BusinessException(CommonErrorCode.CONFLICT, "配置已被修改，请重新读取后操作");
+            if (mapper.updateById(entity) == 0)
+                throw new BusinessException(CommonErrorCode.CONFLICT, "配置已被修改，请重新读取后操作");
         }
         return entity;
     }
