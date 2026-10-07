@@ -1,0 +1,73 @@
+{
+  "catalogVersion" : "dbc32c7739bf2dff46f6afbf6c9666b71617cc83f91c547196f144a0f0c3b8a6",
+  "policyVersion" : "stable-v1",
+  "providers" : [ {
+    "providerCode" : "catalog-test-alpha",
+    "providerName" : "目录测试供应商 ALPHA",
+    "models" : [ {
+      "modelCode" : "catalog-test-alpha-chat",
+      "modelName" : "目录测试 alpha-chat",
+      "modelFamily" : "CatalogTest",
+      "modelType" : "CHAT",
+      "versionCode" : "v2",
+      "contextWindow" : 32768,
+      "maxInputTokens" : 24576,
+      "maxOutputTokens" : 4096,
+      "inputModalities" : [ "image", "text" ],
+      "outputModalities" : [ "text" ],
+      "capabilities" : [ "JSON_MODE", "STREAMING", "TOOL_CALLING", "VISION_INPUT" ]
+    }, {
+      "modelCode" : "catalog-test-project-chat",
+      "modelName" : "目录测试 project-chat",
+      "modelFamily" : "CatalogTest",
+      "modelType" : "CHAT",
+      "versionCode" : "v1",
+      "contextWindow" : 8192,
+      "maxInputTokens" : 6144,
+      "maxOutputTokens" : 2048,
+      "inputModalities" : [ "text" ],
+      "outputModalities" : [ "text" ],
+      "capabilities" : [ "JSON_MODE", "STREAMING", "TOOL_CALLING" ]
+    } ]
+  }, {
+    "providerCode" : "catalog-test-beta",
+    "providerName" : "目录测试供应商 BETA",
+    "models" : [ {
+      "modelCode" : "catalog-test-beta-embedding",
+      "modelName" : "目录测试 beta-embedding",
+      "modelFamily" : "CatalogTest",
+      "modelType" : "EMBEDDING",
+      "versionCode" : "v1",
+      "contextWindow" : 8192,
+      "maxInputTokens" : 6144,
+      "maxOutputTokens" : 2048,
+      "inputModalities" : [ "text" ],
+      "outputModalities" : [ "vector" ],
+      "capabilities" : [ "EMBEDDING" ]
+    }, {
+      "modelCode" : "catalog-test-tenant-chat",
+      "modelName" : "目录测试 tenant-chat",
+      "modelFamily" : "CatalogTest",
+      "modelType" : "CHAT",
+      "versionCode" : "v1",
+      "contextWindow" : 8192,
+      "maxInputTokens" : 6144,
+      "maxOutputTokens" : 2048,
+      "inputModalities" : [ "text" ],
+      "outputModalities" : [ "text" ],
+      "capabilities" : [ "JSON_MODE", "STREAMING", "TOOL_CALLING" ]
+    }, {
+      "modelCode" : "catalog-test-user-chat",
+      "modelName" : "目录测试 user-chat",
+      "modelFamily" : "CatalogTest",
+      "modelType" : "CHAT",
+      "versionCode" : "v1",
+      "contextWindow" : 8192,
+      "maxInputTokens" : 6144,
+      "maxOutputTokens" : 2048,
+      "inputModalities" : [ "text" ],
+      "outputModalities" : [ "text" ],
+      "capabilities" : [ "JSON_MODE", "STREAMING", "TOOL_CALLING" ]
+    } ]
+  } ]
+}
