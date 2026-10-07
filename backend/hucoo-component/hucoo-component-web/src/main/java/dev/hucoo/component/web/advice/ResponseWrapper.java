@@ -27,6 +27,8 @@ public class ResponseWrapper implements ResponseBodyAdvice<Object> {
         if (method == null || controllerClass == null || !controllerClass.getName().startsWith(SCANNED_PACKAGE_PREFIX)) {
             return false;
         }
+        if (method.isAnnotationPresent(dev.hucoo.commons.api.RawResponse.class)
+                || controllerClass.isAnnotationPresent(dev.hucoo.commons.api.RawResponse.class)) return false;
         Class<?> parameterType = returnType.getParameterType();
         if (void.class.equals(parameterType)
                 || Void.class.equals(parameterType)

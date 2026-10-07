@@ -168,7 +168,9 @@ agent-platform:
       base-url: http://127.0.0.1:9999
   model-runtime:
     enabled: true
+    # 开启后通过进程内治理 Facade 读取当前登录身份可调用的已发布路由及加密凭证。
     persistence-enabled: ${HUCOO_MODEL_RUNTIME_PERSISTENCE:false}
+    open-code-go-user-agent: ${HUCOO_OPENCODE_GO_USER_AGENT:hucoo-agent-platform/1.0}
     max-attempts: 3
     connect-timeout: 2s
     response-timeout: 30s

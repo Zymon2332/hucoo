@@ -12,6 +12,8 @@ import lombok.Data;
 public class ChatCompletionRequest {
     @NotBlank private String model;
     @NotEmpty private List<ChatMessage> messages = new ArrayList<>();
+    @jakarta.validation.constraints.Positive
+    private Long projectId;
     private Boolean stream = false;
     private Double temperature;
     private Integer maxTokens;

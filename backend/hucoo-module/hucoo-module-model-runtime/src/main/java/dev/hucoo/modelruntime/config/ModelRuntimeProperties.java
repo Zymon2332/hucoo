@@ -10,6 +10,7 @@ import lombok.Data;
 @ConfigurationProperties(prefix = "agent-platform.model-runtime")
 public class ModelRuntimeProperties {
     private boolean enabled = true;
+    private String openCodeGoUserAgent = "hucoo-agent-platform/1.0";
     private boolean persistenceEnabled;
     private int maxAttempts = 3;
     private Duration connectTimeout = Duration.ofSeconds(2);

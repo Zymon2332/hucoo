@@ -41,88 +41,137 @@ public class ModelInvocationService implements ModelRuntimeFacade {
     private final SecretStore secretStore;
     private final List<ModelProviderAdapter> adapters;
     private final ModelRuntimeProperties properties;
+    private final dev.hucoo.modelgovernance.client.ModelInvocationConfigurationFacade configuration;
+    // 仅缓存健康/并发状态；每次请求重新读取准入配置，不在全局缓存中保存明文密钥。
+    private final Map<String, ModelAccessAccount> governedAccounts = new ConcurrentHashMap<>();
+    private record InvocationRoute(ModelAccessAccount account, String upstreamModel,
+                                   java.util.function.Supplier<String> secret, String providerCode,
+                                   String protocol, int priority) {}
 
     public ModelInvocationService(SecretStore secretStore, List<ModelProviderAdapter> adapters,
                                   ModelRuntimeProperties properties) {
+        this(secretStore, adapters, properties, (dev.hucoo.modelgovernance.client.ModelInvocationConfigurationFacade) null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ModelInvocationService(SecretStore secretStore, List<ModelProviderAdapter> adapters, ModelRuntimeProperties properties,
+            org.springframework.beans.factory.ObjectProvider<dev.hucoo.modelgovernance.client.ModelInvocationConfigurationFacade> configuration) {
+        this(secretStore, adapters, properties, configuration.getIfAvailable());
+    }
+
+    public ModelInvocationService(SecretStore secretStore, List<ModelProviderAdapter> adapters, ModelRuntimeProperties properties,
+            dev.hucoo.modelgovernance.client.ModelInvocationConfigurationFacade configuration) {
         this.secretStore = secretStore;
         this.adapters = adapters;
         this.properties = properties;
+        this.configuration = configuration;
     }
 
     public Mono<String> invoke(ChatCompletionRequest request) {
-        return Mono.defer(() -> attempt(request, false, 0, List.of()));
+        var user = dev.hucoo.component.security.context.CurrentUserContext.get();
+        return routes(request, user).flatMap(routes -> attempt(request, routes, 0, List.of()));
     }
 
     public Flux<String> stream(ChatCompletionRequest request) {
-        return Flux.defer(() -> {
-            ModelAccessAccount account = select(request.getModel(), List.of());
-            if (account == null) return Flux.error(routeFailed(request.getModel()));
-            if (!account.tryAcquire()) return Flux.error(routeFailed(request.getModel()));
-            ModelProviderAdapter adapter = adapter(account.getProviderCode());
-            String secret = secretStore.get(account.getKeyRef());
-            if (secret == null || secret.isBlank()) {
-                account.release(false);
-                return Flux.error(new ProviderFailure(FailureClass.AUTHENTICATION, 401, "model credential is unavailable"));
-            }
-            ProviderRequest providerRequest = toProviderRequest(request, true);
-            return adapter.stream(providerRequest, account, secret)
+        var user = dev.hucoo.component.security.context.CurrentUserContext.get();
+        return routes(request, user).flatMapMany(routes -> Flux.defer(() -> {
+            InvocationRoute route = select(routes, List.of());
+            if (route == null || !route.account().tryAcquire()) return Flux.error(routeFailed(request.getModel()));
+            ModelAccessAccount account = route.account();
+            return Flux.defer(() -> adapter(route).stream(
+                            toProviderRequest(request, true, route.upstreamModel()), account, secret(route)))
                     .timeout(properties.getStreamIdleTimeout())
-                    .doOnComplete(() -> account.release(true))
-                    .doOnError(error -> account.release(false));
-        });
+                    .doOnError(error -> penalize(account, classify(error)))
+                    .doFinally(signal -> account.release(signal == reactor.core.publisher.SignalType.ON_COMPLETE));
+        }));
     }
 
-    private Mono<String> attempt(ChatCompletionRequest request, boolean stream, int attempt,
-                                 List<Long> used) {
+    private Mono<List<InvocationRoute>> routes(ChatCompletionRequest request, dev.hucoo.component.security.context.CurrentUser user) {
+        if (!properties.isPersistenceEnabled()) return Mono.fromSupplier(() -> accounts.values().stream()
+                .filter(a -> request.getModel().equals(a.getModelCode()))
+                .map(a -> new InvocationRoute(a, a.getModelCode(), () -> secretStore.get(a.getKeyRef()),
+                        a.getProviderCode(), a.getProviderCode(), 0)).toList());
+        // 在 Servlet 请求线程捕获可信身份，避免订阅或重试切换线程后丢失 ThreadLocal。
+        if (user == null || user.userId() == null || user.tenantId() == null || user.tenantId().isBlank())
+            return Mono.error(new BusinessException(CommonErrorCode.UNAUTHORIZED));
+        if (configuration == null) return Mono.error(new BusinessException(CommonErrorCode.SERVICE_UNAVAILABLE,
+                "持久化模型运行时未连接治理配置 Facade"));
+        var context = new dev.hucoo.modelgovernance.client.ModelInvocationConfigurationFacade.Context(
+                user.tenantId(), user.userId(), request.getProjectId(), request.getModel(), java.time.LocalDateTime.now());
+        return Mono.fromCallable(() -> configuration.resolve(context).stream().map(route -> {
+            String prefix = route.tenantId() + ":" + route.targetId() + ":";
+            String key = prefix + sha256(route.endpoint() + ":" + route.weight() + ":" + route.maxConcurrency()
+                    + ":" + route.authenticationRequired() + ":" + route.credentialFingerprint());
+            governedAccounts.entrySet().removeIf(e -> e.getKey().startsWith(prefix)
+                    && !e.getKey().equals(key) && e.getValue().getInFlight().get() == 0);
+            ModelAccessAccount account = governedAccounts.computeIfAbsent(key, ignored -> ModelAccessAccount.builder()
+                    .id(route.targetId()).modelCode(route.modelCode()).providerCode(route.protocol()).endpoint(route.endpoint())
+                    .accountName("governed:" + route.targetId()).configuredWeight(route.weight())
+                    .maxConcurrency(route.maxConcurrency()).status(AccountStatus.ACTIVE).circuitState(CircuitState.CLOSED)
+                    .authenticationRequired(route.authenticationRequired()).healthScore(1.0).build());
+            // 请求使用自己的配置副本；共享账户只提供状态和并发计数。
+            return new InvocationRoute(account, route.providerModelCode(), route.credential(), route.providerCode(),
+                    route.protocol(), route.priority());
+        }).toList()).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
+    }
+
+    private String secret(InvocationRoute route) {
+        String secret = route.secret().get();
+        if (route.account().isAuthenticationRequired() && (secret == null || secret.isBlank()))
+            throw new ProviderFailure(FailureClass.AUTHENTICATION, 401, "model credential is unavailable");
+        return secret;
+    }
+
+    private Mono<String> attempt(ChatCompletionRequest request, List<InvocationRoute> routes,
+                                 int attempt, List<Long> used) {
         if (attempt >= properties.getMaxAttempts()) return Mono.error(routeFailed(request.getModel()));
-        ModelAccessAccount account = select(request.getModel(), used);
-        if (account == null) return Mono.error(routeFailed(request.getModel()));
-        if (!account.tryAcquire()) return attempt(request, stream, attempt + 1, append(used, account.getId()));
-        ModelProviderAdapter adapter = adapter(account.getProviderCode());
-        String secret = secretStore.get(account.getKeyRef());
-        if (secret == null || secret.isBlank()) {
-            account.release(false);
-            return attempt(request, stream, attempt + 1, append(used, account.getId()));
-        }
-        return adapter.invoke(toProviderRequest(request, false), account, secret)
+        InvocationRoute route = select(routes, used);
+        if (route == null) return Mono.error(routeFailed(request.getModel()));
+        ModelAccessAccount account = route.account();
+        if (!account.tryAcquire()) return attempt(request, routes, attempt + 1, append(used, account.getId()));
+        return Mono.defer(() -> adapter(route).invoke(
+                        toProviderRequest(request, false, route.upstreamModel()), account, secret(route)))
                 .timeout(properties.getResponseTimeout())
                 .doOnSuccess(ignored -> account.release(true))
+                .doFinally(signal -> { if (signal == reactor.core.publisher.SignalType.CANCEL) account.release(false); })
                 .onErrorResume(error -> {
                     account.release(false);
                     FailureClass failure = classify(error);
                     penalize(account, failure);
-                    if (retryable(failure) && attempt + 1 < properties.getMaxAttempts()) {
-                        return attempt(request, false, attempt + 1, append(used, account.getId()));
-                    }
+                    if (retryable(failure) && attempt + 1 < properties.getMaxAttempts()
+                            && select(routes, append(used, account.getId())) != null)
+                        return attempt(request, routes, attempt + 1, append(used, account.getId()));
                     return Mono.error(error);
                 });
     }
 
-    private ModelAccessAccount select(String model, List<Long> excluded) {
+    private InvocationRoute select(List<InvocationRoute> routes, List<Long> excluded) {
         Instant now = Instant.now();
-        List<ModelAccessAccount> candidates = accounts.values().stream()
-                .filter(account -> model.equals(account.getModelCode()))
-                .filter(account -> !excluded.contains(account.getId()))
-                .filter(account -> account.available(now))
-                .filter(account -> adapter(account.getProviderCode()) != null)
-                .sorted(Comparator.comparingDouble((ModelAccessAccount a) -> a.effectiveWeight(properties.getLowBalanceFactor())).reversed())
-                .toList();
+        var candidates = routes.stream().filter(r -> !excluded.contains(r.account().getId()))
+                .filter(r -> r.account().available(now)).filter(r -> adapter(r) != null).toList();
         if (candidates.isEmpty()) return null;
-        double total = candidates.stream().mapToDouble(a -> a.effectiveWeight(properties.getLowBalanceFactor())).sum();
+        int priority = candidates.stream().mapToInt(InvocationRoute::priority).min().orElse(0);
+        candidates = candidates.stream().filter(r -> r.priority() == priority).toList();
+        double total = candidates.stream().mapToDouble(r -> r.account().effectiveWeight(properties.getLowBalanceFactor())).sum();
         double pick = ThreadLocalRandom.current().nextDouble(total);
-        for (ModelAccessAccount candidate : candidates) {
-            pick -= candidate.effectiveWeight(properties.getLowBalanceFactor());
+        for (var candidate : candidates) {
+            pick -= candidate.account().effectiveWeight(properties.getLowBalanceFactor());
             if (pick <= 0) return candidate;
         }
-        return candidates.get(0);
+        return candidates.getFirst();
     }
 
     private ModelProviderAdapter adapter(String provider) {
         return adapters.stream().filter(item -> item.supports(provider)).findFirst().orElse(null);
     }
 
-    private ProviderRequest toProviderRequest(ChatCompletionRequest request, boolean stream) {
-        return new ProviderRequest(request.getModel(), request.getMessages(), stream,
+    private ModelProviderAdapter adapter(InvocationRoute route) {
+        ModelProviderAdapter providerAdapter = adapter(route.providerCode());
+        return providerAdapter != null ? providerAdapter : adapter(route.protocol());
+    }
+
+    private ProviderRequest toProviderRequest(ChatCompletionRequest request, boolean stream, String upstreamModel) {
+        return new ProviderRequest(upstreamModel, request.getMessages(), stream,
                 request.getTemperature(), request.getMaxTokens(), request.getExtra());
     }
 

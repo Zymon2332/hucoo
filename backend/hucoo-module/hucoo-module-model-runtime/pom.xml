@@ -14,6 +14,10 @@
     <description>模型运行时路由、负载均衡、熔断和供应商适配</description>
     <dependencies>
         <dependency>
+            <groupId>dev.hucoo</groupId>
+            <artifactId>hucoo-module-model-governance-client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webclient</artifactId>
         </dependency>

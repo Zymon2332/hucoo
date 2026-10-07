@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import dev.hucoo.modelruntime.infrastructure.adapter.ProviderFailure;
 
+@org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
+@dev.hucoo.commons.api.RawResponse
 @RestControllerAdvice(basePackageClasses = ModelRuntimeController.class)
 public class ModelRuntimeExceptionHandler {
     @ExceptionHandler(ProviderFailure.class)

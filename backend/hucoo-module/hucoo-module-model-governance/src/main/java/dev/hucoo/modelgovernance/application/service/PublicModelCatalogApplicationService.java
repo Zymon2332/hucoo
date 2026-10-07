@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import dev.hucoo.commons.exception.BusinessException;
@@ -31,8 +32,8 @@ public class PublicModelCatalogApplicationService implements ModelPublicCatalogF
     private final StableModelCatalogPolicy stablePolicy = new StableModelCatalogPolicy();
 
     public PublicModelCatalogApplicationService(ModelCatalogRepository repository,
-            PublicModelCatalogConverter converter, ModelCatalogReleasePolicy releasePolicy,
-            @Qualifier("modelCatalogClock") Clock clock) {
+                                                PublicModelCatalogConverter converter, ModelCatalogReleasePolicy releasePolicy,
+                                                @Qualifier("modelCatalogClock") Clock clock) {
         this.repository = repository;
         this.converter = converter;
         this.releasePolicy = releasePolicy;
@@ -41,7 +42,8 @@ public class PublicModelCatalogApplicationService implements ModelPublicCatalogF
 
     @Override
     public PublicModelCatalogDTO catalog(PublicModelCatalogQuery query) {
-        var user = CurrentUserContext.require();
+        // 校验当前用户
+        var user = CurrentUserContext.getOptional().orElseThrow(() -> new BusinessException(CommonErrorCode.UNAUTHORIZED));
         if (user.userId() == null || user.tenantId() == null || user.tenantId().isBlank()) {
             throw new BusinessException(CommonErrorCode.UNAUTHORIZED);
         }
@@ -50,7 +52,9 @@ public class PublicModelCatalogApplicationService implements ModelPublicCatalogF
             throw new BusinessException(CommonErrorCode.BAD_REQUEST, "projectId 必须是正整数");
         }
         LocalDateTime now = LocalDateTime.now(clock);
+        // 获取当前所有相关数据
         ModelCatalogSnapshot snapshot = repository.publicSnapshot(user.tenantId());
+        // 汇总成模型目录
         var candidates = candidates(snapshot, user.tenantId(), projectId, user.userId(), now).stream()
                 .filter(candidate -> stablePolicy.isVisible(new ModelCatalogPolicyContext(user.tenantId(), projectId,
                         user.userId(), now, candidate.model().getModelCode(), candidate.version().getVersionCode(), ""), candidate))
@@ -58,8 +62,8 @@ public class PublicModelCatalogApplicationService implements ModelPublicCatalogF
         // 提供给灰度策略的基线版本仅由安全 DTO 构成，不对密钥或内部路由做摘要。
         String baselineVersion = digest(group(snapshot, candidates));
         List<ModelCatalogCandidate> visible = candidates.stream().filter(candidate -> releasePolicy.isVisible(
-                new ModelCatalogPolicyContext(user.tenantId(), projectId, user.userId(), now,
-                        candidate.model().getModelCode(), candidate.version().getVersionCode(), baselineVersion), candidate))
+                        new ModelCatalogPolicyContext(user.tenantId(), projectId, user.userId(), now,
+                                candidate.model().getModelCode(), candidate.version().getVersionCode(), baselineVersion), candidate))
                 .toList();
         var providers = group(snapshot, visible);
         String policyVersion = releasePolicy.policyVersion();
@@ -67,39 +71,8 @@ public class PublicModelCatalogApplicationService implements ModelPublicCatalogF
     }
 
     private List<ModelCatalogCandidate> candidates(ModelCatalogSnapshot snapshot, String tenantId,
-            Long projectId, Long userId, LocalDateTime now) {
-        var models = index(snapshot, LogicalModel.class);
-        var versions = index(snapshot, ModelVersion.class);
-        var providers = index(snapshot, ModelProvider.class);
-        var channels = index(snapshot, ModelChannel.class);
-        var bindings = index(snapshot, ModelChannelBinding.class);
-        var validations = index(snapshot, ModelValidationRun.class);
-        var credentials = index(snapshot, ModelCredential.class);
-        var routes = index(snapshot, ModelRoutePolicy.class);
-        var context = new ModelCatalogPolicyContext(tenantId, projectId, userId, now, "", "", "");
-        // 同一归属租户、同一模型只采用最具体的已启用路由范围，避免较宽范围绕过项目路由。
-        Map<String, Integer> routePriorities = new HashMap<>();
-        routes.values().stream().filter(route -> Integer.valueOf(1).equals(route.getEnabled())).forEach(route ->
-                routePriorities.merge(route.getTenantId() + ":" + route.getModelId(),
-                        context.scopePriority(route.getScopeType(), route.getScopeId()), Math::max));
-        List<ModelCatalogCandidate> candidates = new ArrayList<>();
-        for (ModelRouteTarget target : snapshot.list(ModelRouteTarget.class)) {
-            ModelChannelBinding binding = bindings.get(target.getBindingId());
-            ModelRoutePolicy route = routes.get(target.getRoutePolicyId());
-            if (binding == null || route == null) continue;
-            int priority = context.scopePriority(route.getScopeType(), route.getScopeId());
-            if (priority == 0 || priority != routePriorities.getOrDefault(route.getTenantId() + ":" + route.getModelId(), 0)) continue;
-            ModelVersion version = versions.get(binding.getModelVersionId());
-            ModelChannel channel = channels.get(binding.getChannelId());
-            if (version == null || channel == null) continue;
-            LogicalModel model = models.get(version.getModelId());
-            ModelProvider provider = providers.get(channel.getProviderId());
-            if (model == null || provider == null) continue;
-            candidates.add(new ModelCatalogCandidate(model, version, provider, channel, binding,
-                    validations.get(binding.getLastValidationRunId()), credentials.get(target.getCredentialId()),
-                    route, target, snapshot.list(ModelVisibilityGrant.class)));
-        }
-        return candidates;
+                                                   Long projectId, Long userId, LocalDateTime now) {
+        return new ModelCatalogCandidateResolver().candidates(snapshot, tenantId, projectId, userId, now);
     }
 
     private List<PublicModelProviderGroupDTO> group(ModelCatalogSnapshot snapshot, List<ModelCatalogCandidate> candidates) {

@@ -2,6 +2,7 @@ package dev.hucoo.modelruntime.infrastructure.adapter;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,26 +31,45 @@ public class OpenAiCompatibleAdapter implements ModelProviderAdapter {
 
     @Override
     public Mono<String> invoke(ProviderRequest request, ModelAccessAccount account, String secret) {
-        return exchange(request, account, secret, false).collectList().map(parts -> String.join("", parts));
+        return invokeWithHeaders(request, account, secret, ignored -> { });
     }
 
     @Override
     public Flux<String> stream(ProviderRequest request, ModelAccessAccount account, String secret) {
-        return exchange(request, account, secret, true);
+        return streamWithHeaders(request, account, secret, ignored -> { });
+    }
+
+    Mono<String> invokeWithHeaders(ProviderRequest request, ModelAccessAccount account, String secret,
+                                   Consumer<HttpHeaders> headersCustomizer) {
+        return exchange(request, account, secret, false, headersCustomizer).collectList()
+                .map(parts -> String.join("", parts));
+    }
+
+    Flux<String> streamWithHeaders(ProviderRequest request, ModelAccessAccount account, String secret,
+                                   Consumer<HttpHeaders> headersCustomizer) {
+        return exchange(request, account, secret, true, headersCustomizer);
     }
 
     private Flux<String> exchange(ProviderRequest request, ModelAccessAccount account,
-                                  String secret, boolean stream) {
+                                  String secret, boolean stream,
+                                  Consumer<HttpHeaders> headersCustomizer) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", request.model());
         body.put("messages", request.messages());
         body.put("stream", stream);
         if (request.temperature() != null) body.put("temperature", request.temperature());
         if (request.maxTokens() != null) body.put("max_tokens", request.maxTokens());
-        if (request.extra() != null) body.putAll(request.extra());
+        if (request.extra() != null) request.extra().forEach((key, value) -> {
+            if (java.util.Set.of("model", "messages", "stream", "temperature", "max_tokens").contains(key))
+                throw new IllegalArgumentException("extra 不允许覆盖核心调用参数");
+            body.put(key, value);
+        });
         return clientBuilder.clone().baseUrl(account.getEndpoint()).build()
                 .post().uri("/chat/completions")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + secret)
+                .headers(headers -> {
+                    if (account.isAuthenticationRequired()) headers.setBearerAuth(secret);
+                    headersCustomizer.accept(headers);
+                })
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(stream ? MediaType.TEXT_EVENT_STREAM : MediaType.APPLICATION_JSON)
                 .bodyValue(body)

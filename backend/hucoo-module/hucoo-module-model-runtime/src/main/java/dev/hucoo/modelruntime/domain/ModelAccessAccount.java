@@ -18,6 +18,8 @@ public class ModelAccessAccount {
     private String accountName;
     private String endpoint;
     private String keyRef;
+    @Builder.Default
+    private boolean authenticationRequired = true;
     private String keyFingerprint;
     private int configuredWeight;
     private int maxConcurrency;

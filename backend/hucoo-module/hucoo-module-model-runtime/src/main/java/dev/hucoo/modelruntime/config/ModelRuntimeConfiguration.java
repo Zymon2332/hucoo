@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 @EnableConfigurationProperties(ModelRuntimeProperties.class)
 @Import({dev.hucoo.modelruntime.infrastructure.secret.InMemorySecretStore.class,
         dev.hucoo.modelruntime.infrastructure.adapter.OpenAiCompatibleAdapter.class,
+        dev.hucoo.modelruntime.infrastructure.adapter.OpenCodeGoAdapter.class,
         dev.hucoo.modelruntime.infrastructure.adapter.DeepSeekModelProviderAdapter.class,
         dev.hucoo.modelruntime.application.service.ModelInvocationService.class,
         dev.hucoo.modelruntime.controller.ModelRuntimeController.class,
