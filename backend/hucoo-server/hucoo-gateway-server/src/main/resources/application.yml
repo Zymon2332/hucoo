@@ -27,25 +27,34 @@ spring:
       server:
         webflux:
           default-filters:
-            - StripPrefix=2  # 全局去掉前两层层路径（即 /api/admin）
             - AddResponseHeader=X-Gateway-Node, hucoo-gateway-server # 全局加响应头
           discovery:
             locator:
               enabled: true
               lower-case-service-id: true
           routes:
+            - id: public-model-catalog-route
+              uri: lb://hucoo-application-admin
+              predicates:
+                - Path=/api/v1/model-catalog
             - id: admin-route
               uri: lb://hucoo-application-admin
               predicates:
                 - Path=/api/admin/**
+              filters:
+                - StripPrefix=2
             - id: model-runtime-route
               uri: lb://hucoo-model-runtime
               predicates:
                 - Path=/api/model/**
+              filters:
+                - StripPrefix=2
             - id: agent
               uri: lb://agent
               predicates:
                 - Path=/api/agent/**
+              filters:
+                - StripPrefix=2
           httpclient:
             connect-timeout: 3000
             response-timeout: 10s

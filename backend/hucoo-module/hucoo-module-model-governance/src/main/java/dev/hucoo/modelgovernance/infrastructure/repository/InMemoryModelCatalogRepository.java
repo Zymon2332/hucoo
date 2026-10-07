@@ -12,11 +12,17 @@ import dev.hucoo.commons.exception.ResourceNotFoundException;
 import dev.hucoo.component.database.entity.BaseEntity;
 import dev.hucoo.component.database.tenant.CurrentTenantContext;
 import dev.hucoo.modelgovernance.domain.ModelCatalogRepository;
+import dev.hucoo.modelgovernance.domain.ModelCatalogSnapshot;
 
 @Repository
 @ConditionalOnProperty(prefix = "agent-platform.persistence", name = "enabled", havingValue = "false", matchIfMissing = true)
 public class InMemoryModelCatalogRepository implements ModelCatalogRepository {
     private final Map<Class<?>, Map<Long, String>> tables = new ConcurrentHashMap<>();
+
+    @Override
+    public synchronized ModelCatalogSnapshot publicSnapshot(String tenantId) {
+        return ModelCatalogSnapshot.load(this, tenantId);
+    }
 
     @Override
     public synchronized <T> T inTransaction(java.util.function.Supplier<T> operation) {

@@ -44,6 +44,26 @@ class AdminApplicationTests {
                 .andExpect(jsonPath("$.traceId").value(trace));
     }
 
+    @Autowired
+    private dev.hucoo.component.security.util.JwtUtil jwtUtil;
+
+    @Test
+    void publicCatalogRequiresLoginAndAppearsInApiDocs() throws Exception {
+        mockMvc.perform(get("/api/v1/model-catalog"))
+                .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value(401));
+        String token = jwtUtil.createToken("42", Map.of("userId", 42L, "username", "client", "tenantId", "tenant-a"),
+                java.time.Duration.ofMinutes(5));
+        mockMvc.perform(get("/api/v1/model-catalog").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.data.policyVersion").value("stable-v1"))
+                .andExpect(jsonPath("$.data.providers").isArray());
+        mockMvc.perform(get("/api/v1/model-catalog").header("Authorization", "Bearer " + token).param("projectId", "0"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value(400));
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/v1/model-catalog'].get").exists());
+    }
+
     @Test
     void contextLoads() {
     }

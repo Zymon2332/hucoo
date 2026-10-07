@@ -12,6 +12,9 @@ import dev.hucoo.commons.exception.ResourceNotFoundException;
 import dev.hucoo.component.database.entity.BaseEntity;
 import dev.hucoo.component.database.tenant.CurrentTenantContext;
 import dev.hucoo.modelgovernance.domain.ModelCatalogRepository;
+import dev.hucoo.modelgovernance.domain.ModelCatalogSnapshot;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import dev.hucoo.modelgovernance.domain.entity.*;
 import dev.hucoo.modelgovernance.infrastructure.mapper.*;
 
@@ -21,7 +24,7 @@ public class MybatisModelCatalogRepository implements ModelCatalogRepository {
     private final Map<Class<?>, BaseMapper<?>> mappers;
     private final org.springframework.transaction.support.TransactionTemplate transactions;
 
-    public MybatisModelCatalogRepository(org.springframework.transaction.PlatformTransactionManager transactionManager, LogicalModelMapper logicalModel, ModelVersionMapper modelVersion, ModelChannelBindingMapper modelChannelBinding, ModelVersionCapabilityMapper modelVersionCapability, ModelChannelPriceMapper modelChannelPrice, ModelVisibilityGrantMapper modelVisibilityGrant, ModelCredentialMapper modelCredential, ModelCredentialRotationMapper modelCredentialRotation, ModelChannelMapper modelChannel, ModelProviderMapper modelProvider, ModelRoutePolicyMapper modelRoutePolicy, ModelRouteTargetMapper modelRouteTarget) {
+    public MybatisModelCatalogRepository(org.springframework.transaction.PlatformTransactionManager transactionManager, LogicalModelMapper logicalModel, ModelVersionMapper modelVersion, ModelChannelBindingMapper modelChannelBinding, ModelVersionCapabilityMapper modelVersionCapability, ModelChannelPriceMapper modelChannelPrice, ModelVisibilityGrantMapper modelVisibilityGrant, ModelCredentialMapper modelCredential, ModelCredentialRotationMapper modelCredentialRotation, ModelChannelMapper modelChannel, ModelProviderMapper modelProvider, ModelRoutePolicyMapper modelRoutePolicy, ModelRouteTargetMapper modelRouteTarget, ModelValidationRunMapper modelValidationRun) {
         transactions = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
         mappers = Map.ofEntries(
                 Map.entry(LogicalModel.class, logicalModel),
@@ -30,12 +33,19 @@ public class MybatisModelCatalogRepository implements ModelCatalogRepository {
                 Map.entry(ModelVersionCapability.class, modelVersionCapability),
                 Map.entry(ModelChannelPrice.class, modelChannelPrice),
                 Map.entry(ModelVisibilityGrant.class, modelVisibilityGrant),
+                Map.entry(ModelValidationRun.class, modelValidationRun),
                 Map.entry(ModelCredential.class, modelCredential),
                 Map.entry(ModelCredentialRotation.class, modelCredentialRotation),
                 Map.entry(ModelChannel.class, modelChannel),
                 Map.entry(ModelProvider.class, modelProvider),
                 Map.entry(ModelRouteTarget.class, modelRouteTarget),
                 Map.entry(ModelRoutePolicy.class, modelRoutePolicy));
+    }
+
+    @Override
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public ModelCatalogSnapshot publicSnapshot(String tenantId) {
+        return ModelCatalogSnapshot.load(this, tenantId);
     }
 
     @Override
