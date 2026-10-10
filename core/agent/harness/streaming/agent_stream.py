@@ -46,6 +46,7 @@ from harness.domain.agent_event import (
     ToolResult,
     ToolStart,
 )
+from harness.message_utils import text_of
 from harness.streaming.sse import EventFactory
 
 if TYPE_CHECKING:
@@ -90,31 +91,6 @@ _FINISH_REASON_MAP: dict[str, str] = {
     "other": "other",
     "finish_reason_unspecified": "other",
 }
-
-_RETRYABLE_HINTS = (
-    "timeout",
-    "timed out",
-    "rate",
-    "connection",
-    "temporarily",
-    "overloaded",
-    "unavailable",
-)
-
-def _text_of(content: object) -> str:
-    """把消息块 content 规整为纯文本。"""
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts: list[str] = []
-        for block in content:
-            if isinstance(block, str):
-                parts.append(block)
-            elif isinstance(block, dict) and isinstance(block.get("text"), str):
-                parts.append(block["text"])
-        return "".join(parts)
-    return ""
-
 
 def _arg_delta(prev: str, current: str) -> str:
     """快照差分：v3 的 ``ToolCallChunk.args`` 是累积值，取相对上一片的新增部分。
@@ -161,12 +137,6 @@ def _extract_finish_reason(output: object) -> tuple[str | None, str | None]:
     if not isinstance(raw, str) or not raw:
         return None, None
     return _normalize_finish_reason(raw), raw
-
-
-def _is_retryable(exc: BaseException) -> bool:
-    """启发式判断异常是否可重试（超时/限流/连接类）。"""
-    text = f"{type(exc).__name__} {exc}".lower()
-    return any(hint in text for hint in _RETRYABLE_HINTS)
 
 
 async def stream_agent_events(
@@ -357,7 +327,7 @@ async def stream_agent_events(
                         ToolResult,
                         tool_call_id=str(tool_stream.tool_call_id),
                         name=str(tool_stream.tool_name),
-                        content=_text_of(getattr(tool_stream.output, "content", None)),
+                        content=text_of(getattr(tool_stream.output, "content", None)),
                         duration_ms=duration_ms,
                     )
                 )
@@ -378,7 +348,6 @@ async def stream_agent_events(
                         RunError,
                         code="internal",
                         message=str(result),
-                        retryable=_is_retryable(result),
                         details={"error_type": type(result).__name__},
                     )
                 )
@@ -418,7 +387,6 @@ async def stream_agent_events(
                 RunError,
                 code="internal",
                 message=str(exc),
-                retryable=_is_retryable(exc),
                 details={"error_type": type(exc).__name__},
             )
         with contextlib.suppress(Exception):

@@ -210,7 +210,6 @@ function Thread() {
                 <StreamView
                   run={message.run ?? createEmptyRun()}
                   onInterruptResolve={resume}
-                  onRetry={() => void regenerate()}
                 />
                 <MessageActions
                   role="assistant"

@@ -56,7 +56,7 @@ describe("runReducer", () => {
     const s = feed([
       { ...base, type: "run.start", thread_id: "t1", model: "gpt" },
       { ...base, type: "run.finish", finish_reason: "stop", duration_ms: 9, usage: { input_tokens: 1 } },
-      { ...base, seq: 2, type: "run.error", code: "x", message: "late", retryable: false },
+      { ...base, seq: 2, type: "run.error", code: "x", message: "late" },
     ]);
     expect(s.status).toBe("finished");
     expect(s.error).toBeUndefined();

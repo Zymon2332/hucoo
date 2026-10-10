@@ -37,7 +37,6 @@ export type AgentEvent =
       type: "run.error";
       code: string;
       message: string;
-      retryable: boolean;
       details?: unknown;
     })
   | (EventBase & { type: "step.start"; message_id: string })

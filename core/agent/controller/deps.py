@@ -13,6 +13,8 @@ from fastapi import Depends, Request
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.store.base import BaseStore
 
+from db.session_repository import SessionRepository
+
 
 def get_checkpointer(request: Request) -> BaseCheckpointSaver:
     """取出 lifespan 中构建的 checkpointer。"""
@@ -24,5 +26,11 @@ def get_store(request: Request) -> BaseStore:
     return request.app.state.store
 
 
+def get_session_repo(request: Request) -> SessionRepository:
+    """取出 lifespan 中构建的会话业务表 repository。"""
+    return request.app.state.session_repo
+
+
 CheckpointerDep = Annotated[BaseCheckpointSaver, Depends(get_checkpointer)]
 StoreDep = Annotated[BaseStore, Depends(get_store)]
+SessionRepoDep = Annotated[SessionRepository, Depends(get_session_repo)]

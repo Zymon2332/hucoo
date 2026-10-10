@@ -20,7 +20,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import ToolRuntime
 from pydantic import BaseModel, Field
 
-from controller.deps import CheckpointerDep, StoreDep
+from controller.deps import CheckpointerDep, SessionRepoDep, StoreDep
 from domain.model_config import ModelConfig
 from harness.streaming.agent_stream import stream_agent_events
 from harness.streaming.sse import to_sse
@@ -62,6 +62,7 @@ async def stream_chat(
         payload: StreamPayload,
         checkpointer: CheckpointerDep,
         store: StoreDep,
+        session_repo: SessionRepoDep,
         x_trace_id: Annotated[str | None, Header()] = None,
 ) -> AsyncIterator[ServerSentEvent]:
     """流式对话（SSE）。
@@ -70,12 +71,19 @@ async def stream_chat(
         payload (StreamPayload): 对话请求
         checkpointer: 应用级 checkpointer（依赖注入）。
         store: 应用级长期记忆 store（依赖注入）。
+        session_repo: 应用级会话业务表 repository（依赖注入）。
         x_trace_id: trace id
 
     Yields:
         ServerSentEvent: 领域事件按 SSE 编码后逐条下发，事件类型见事件契约。
     """
-    agent = create_lead_agent(payload.model_conf, [get_weather], checkpointer=checkpointer, store=store)
+    agent = create_lead_agent(
+        payload.model_conf,
+        [get_weather],
+        checkpointer=checkpointer,
+        store=store,
+        session_repo=session_repo,
+    )
 
     trace_id = x_trace_id or uuid.uuid4().hex
 

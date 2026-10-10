@@ -59,12 +59,10 @@ export function StreamView({
   run,
   onSuggestion,
   onInterruptResolve,
-  onRetry,
 }: {
   run: RunState;
   onSuggestion?: (text: string) => void;
   onInterruptResolve?: (approved: boolean) => void;
-  onRetry?: () => void;
 }) {
   if (run.status === "idle") return <EmptyState onSuggestion={onSuggestion} />;
 
@@ -104,19 +102,7 @@ export function StreamView({
         <div className="flex items-center gap-3 rounded-[10px] border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           <span>
             {run.error.message}（{run.error.code}）
-            {run.error.retryable && (
-              <span className="ml-1 opacity-80">· 可重试</span>
-            )}
           </span>
-          {onRetry && (
-            <button
-              type="button"
-              onClick={onRetry}
-              className="ml-auto shrink-0 rounded-[8px] border border-destructive/40 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-destructive/10"
-            >
-              重试
-            </button>
-          )}
         </div>
       )}
 

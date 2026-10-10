@@ -56,7 +56,6 @@ export interface RunState {
   error?: {
     code: string;
     message: string;
-    retryable: boolean;
     details?: unknown;
   };
   interrupt?: { id: string; value: unknown };
@@ -231,7 +230,6 @@ export function runReducer(state: RunState, event: AgentEvent): RunState {
         error: {
           code: event.code,
           message: event.message,
-          retryable: event.retryable,
           details: event.details,
         },
       };

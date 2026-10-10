@@ -44,7 +44,6 @@ def test_tool_result_defaults_is_error_false():
 def test_run_error_fields():
     ev = RunError(run_id="r", seq=3, ts=1, code="internal", message="boom")
     assert ev.type == "run.error"
-    assert ev.retryable is False
 
 
 def test_step_start_has_no_index():

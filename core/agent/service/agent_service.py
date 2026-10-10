@@ -5,14 +5,15 @@ from typing import Any
 from typing_extensions import NotRequired, Required
 
 from langchain.agents import AgentState, create_agent
-from langchain.agents.middleware import AgentMiddleware
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel
 
+from db.session_repository import SessionRepository
 from domain.model_config import ModelConfig
+from harness.middleware.builder import build_middleware
 
 
 # 可持久化的运行时状态
@@ -35,17 +36,13 @@ class RuntimeContext(BaseModel):
     # 调用参数：locale/language、feature_flags、quota
 
 
-def _normalize_middleware() -> list[AgentMiddleware[Any, Any, Any]]:
-    """构建 middleware 列表。暂未接入配置，返回空列表。"""
-    return []
-
-
 def create_lead_agent(
         model_config: ModelConfig,
         tools: list | None = None,
         *,
         checkpointer: BaseCheckpointSaver[Any] | None = None,
         store: BaseStore | None = None,
+        session_repo: SessionRepository | None = None,
         debug: bool = False,
 ):
     # 仅透传显式提供的可选参数，避免把 None 传给 provider 构造函数（如 base_url=None）。
@@ -75,5 +72,5 @@ def create_lead_agent(
         checkpointer=checkpointer,
         store=store,
         debug=debug,
-        middleware=_normalize_middleware(),
+        middleware=build_middleware(session_repo, model),
     )

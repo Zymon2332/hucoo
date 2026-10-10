@@ -41,7 +41,12 @@ ModelFinishReason = Literal[
 """模型（step 级）停止原因，已跨 provider 归一化。"""
 
 RunFinishReason = Literal["stop", "interrupted", "error", "cancelled"]
-"""整个 agent 轮次（run 级）的结束原因。"""
+"""整个 agent 轮次（run 级）的结束原因。
+
+TODO: 目前 ``stream_agent_events`` 只发出 ``"stop"``；``"interrupted"`` 走
+``interrupt`` 事件、``"error"`` 走 ``RunError``、``"cancelled"`` 尚未发出，
+故这三个取值暂未实际使用（保留于契约）。
+"""
 
 
 # --------------------------------------------------------------------------- #
@@ -68,7 +73,6 @@ class RunError(BaseEvent):
     type: Literal["run.error"] = "run.error"
     code: str
     message: str
-    retryable: bool = False
     details: dict[str, Any] = Field(default_factory=dict)
 
 

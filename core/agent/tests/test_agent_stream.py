@@ -3,7 +3,6 @@ from typing import Any
 
 from harness.streaming.agent_stream import (
     _arg_delta,
-    _is_retryable,
     _normalize_finish_reason,
     stream_agent_events,
 )
@@ -68,11 +67,6 @@ def test_normalize_finish_reason():
     assert _normalize_finish_reason("refusal") == "refusal"
     assert _normalize_finish_reason("weird") == "other"
     assert _normalize_finish_reason(None) is None
-
-
-def test_is_retryable():
-    assert _is_retryable(TimeoutError("x")) is True
-    assert _is_retryable(ValueError("bad input")) is False
 
 
 # --------------------------------------------------------------------------- #
@@ -246,4 +240,3 @@ async def test_run_error_observability_fields():
     assert "run.finish" not in types
     err = next(e for e in events if e.type == "run.error")
     assert err.details.get("error_type")
-    assert isinstance(err.retryable, bool)

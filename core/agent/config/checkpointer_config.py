@@ -2,8 +2,8 @@
 
 对应环境变量前缀 ``CHECKPOINTER_``，例如 ``CHECKPOINTER_BACKEND``。
 
-- ``memory``：``InMemorySaver``，仅用于本地开发/测试，进程重启即丢。
-- ``postgres``：``AsyncPostgresSaver``，生产使用，按 ``thread_id`` 持久化会话状态。
+- ``postgres``：``AsyncPostgresSaver``，按 ``thread_id`` 持久化会话状态。
+  连接串统一由 ``DATABASE_URL`` 提供（见 ``config.database_config``）。
 """
 
 from __future__ import annotations
@@ -21,17 +21,8 @@ class CheckpointerConfig(BaseConfig):
 
     model_config = SettingsConfigDict(extra="ignore", env_prefix="CHECKPOINTER_")
 
-    backend: Literal["memory", "postgres"] = "memory"
+    backend: Literal["postgres"] = "postgres"
     """存储后端。"""
-
-    db_uri: str | None = None
-    """Postgres 连接串，``backend=postgres`` 时必填。"""
-
-    pool_min_size: int = 1
-    """连接池最小连接数。"""
-
-    pool_max_size: int = 10
-    """连接池最大连接数。"""
 
     auto_setup: bool = True
     """启动时是否自动建表/执行迁移。"""
