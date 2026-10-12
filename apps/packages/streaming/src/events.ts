@@ -7,17 +7,6 @@ export interface EventBase {
   ts: number;
 }
 
-export type FinishReason =
-  | "stop"
-  | "length"
-  | "tool_calls"
-  | "content_filter"
-  | "refusal"
-  | "error"
-  | "other";
-
-export type RunFinishReason = "stop" | "interrupted" | "error" | "cancelled";
-
 export interface Usage {
   input_tokens?: number;
   output_tokens?: number;
@@ -29,7 +18,6 @@ export type AgentEvent =
   | (EventBase & { type: "run.start"; thread_id: string; model: string })
   | (EventBase & {
       type: "run.finish";
-      finish_reason: RunFinishReason;
       usage?: Usage;
       duration_ms: number;
     })
@@ -43,8 +31,6 @@ export type AgentEvent =
   | (EventBase & {
       type: "step.end";
       message_id: string;
-      finish_reason?: FinishReason | null;
-      raw_finish_reason?: string | null;
       duration_ms: number;
       usage?: Usage;
     })

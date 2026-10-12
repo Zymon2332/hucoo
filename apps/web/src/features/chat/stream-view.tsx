@@ -1,11 +1,10 @@
 import { motion } from "motion/react";
-import { Robot, WarningCircle } from "@phosphor-icons/react";
+import { Robot } from "@phosphor-icons/react";
 import type { ContentBlock, RunState } from "@hucoo/streaming";
 import { MarkdownRenderer } from "@/features/artifact/renderers/markdown-renderer";
 import { ReasoningBlock } from "./reasoning-block";
 import { ToolTimeline } from "./tool-timeline";
 import { InterruptCard } from "./interrupt-card";
-import { finishReasonNotice } from "./finish-reason";
 
 function BlockView({ block }: { block: ContentBlock }) {
   if (block.kind === "reasoning") {
@@ -68,28 +67,19 @@ export function StreamView({
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6">
-      {run.steps.map((step, i) => {
-        const notice = finishReasonNotice(step.finishReason);
-        return (
-          <motion.div
-            key={`${step.messageId}-${i}`}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="space-y-2"
-          >
-            {step.blocks.map((block, j) => (
-              <BlockView key={`${block.id}-${j}`} block={block} />
-            ))}
-            {notice && (
-              <p className="flex items-center gap-1.5 text-xs text-warning">
-                <WarningCircle size={13} />
-                {notice}
-              </p>
-            )}
-          </motion.div>
-        );
-      })}
+      {run.steps.map((step, i) => (
+        <motion.div
+          key={`${step.messageId}-${i}`}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="space-y-2"
+        >
+          {step.blocks.map((block, j) => (
+            <BlockView key={`${block.id}-${j}`} block={block} />
+          ))}
+        </motion.div>
+      ))}
 
       {run.status === "streaming" && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -1,10 +1,8 @@
-import pytest
-from pydantic import TypeAdapter, ValidationError
+from pydantic import TypeAdapter
 
 from harness.domain.agent_event import (
     AgentEvent,
     RunError,
-    RunFinish,
     RunStart,
     StepStart,
     TextDelta,
@@ -50,9 +48,3 @@ def test_step_start_has_no_index():
     ev = StepStart(run_id="r", seq=1, ts=1, message_id="m")
     assert ev.type == "step.start"
     assert not hasattr(ev, "index")
-
-
-def test_run_finish_reason_is_run_level_only():
-    RunFinish(run_id="r", seq=1, ts=1, finish_reason="interrupted")
-    with pytest.raises(ValidationError):
-        RunFinish(run_id="r", seq=1, ts=1, finish_reason="tool_calls")  # type: ignore[arg-type]

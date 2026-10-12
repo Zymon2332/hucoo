@@ -36,17 +36,6 @@ describe("StreamView", () => {
     expect(screen.getByText("结果是")).toBeInTheDocument();
   });
 
-  it("shows a localized notice for truncated output", () => {
-    const run = stateFrom([
-      { ...base, type: "step.start", message_id: "m1" },
-      { ...base, type: "text.start", message_id: "m1" },
-      { ...base, type: "text.delta", message_id: "m1", delta: "partial" },
-      { ...base, type: "step.end", message_id: "m1", finish_reason: "length", duration_ms: 5 },
-    ]);
-    render(<StreamView run={run} />);
-    expect(screen.getByText(/回答被截断/)).toBeInTheDocument();
-  });
-
   it("renders an approval card on interrupt", () => {
     const run = stateFrom([
       { ...base, type: "interrupt", id: "i1", value: { action: "delete" } },

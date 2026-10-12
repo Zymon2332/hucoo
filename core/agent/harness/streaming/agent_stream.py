@@ -54,43 +54,6 @@ if TYPE_CHECKING:
 
 _USAGE_KEYS = {"input_tokens", "output_tokens", "total_tokens"}
 
-_FINISH_REASON_MAP: dict[str, str] = {
-    # stop
-    "stop": "stop",
-    "end_turn": "stop",
-    "complete": "stop",
-    "stop_sequence": "stop",
-    # length
-    "length": "length",
-    "max_tokens": "length",
-    "model_length": "length",
-    # tool calls
-    "tool_calls": "tool_calls",
-    "tool_use": "tool_calls",
-    "tool_call": "tool_calls",
-    "function_call": "tool_calls",
-    # content filter / safety
-    "content_filter": "content_filter",
-    "safety": "content_filter",
-    "recitation": "content_filter",
-    "blocklist": "content_filter",
-    "prohibited_content": "content_filter",
-    "spii": "content_filter",
-    "image_safety": "content_filter",
-    "language": "content_filter",
-    "error_toxic": "content_filter",
-    # refusal
-    "refusal": "refusal",
-    # provider error
-    "error": "error",
-    "error_limit": "error",
-    "malformed_function_call": "error",
-    "unexpected_tool_call": "error",
-    "insufficient_system_resource": "error",
-    # other / unknown
-    "other": "other",
-    "finish_reason_unspecified": "other",
-}
 
 def _arg_delta(prev: str, current: str) -> str:
     """快照差分：v3 的 ``ToolCallChunk.args`` 是累积值，取相对上一片的新增部分。
@@ -121,24 +84,6 @@ def _usage_of(output: object) -> dict[str, int] | None:
     return picked or None
 
 
-def _normalize_finish_reason(raw: str | None) -> str | None:
-    """把各 provider 的停止原因归一化为 ``ModelFinishReason``。"""
-    if not raw:
-        return None
-    return _FINISH_REASON_MAP.get(raw.strip().lower(), "other")
-
-
-def _extract_finish_reason(output: object) -> tuple[str | None, str | None]:
-    """从组装后的 ``AIMessage`` 取 (归一化原因, 原始原因)。"""
-    meta = getattr(output, "response_metadata", None)
-    if not isinstance(meta, dict):
-        return None, None
-    raw = meta.get("finish_reason") or meta.get("stop_reason")
-    if not isinstance(raw, str) or not raw:
-        return None, None
-    return _normalize_finish_reason(raw), raw
-
-
 async def stream_agent_events(
     agent: Any,
     agent_input: Any,
@@ -164,10 +109,8 @@ async def stream_agent_events(
     usage_totals: dict[str, int] = {}
     # step 内「当前打开的内容块」状态（同一时刻至多一个）。
     block: dict[str, Any] = {"kind": None, "started_at": 0.0}
-    # 延迟闭合的 step.end 数据：(message_id, finish_reason, raw_finish_reason, usage, started_at)
-    pending: tuple[str, str | None, str | None, dict[str, int] | None, float] | None = (
-        None
-    )
+    # 延迟闭合的 step.end 数据：(message_id, usage, started_at)
+    pending: tuple[str, dict[str, int] | None, float] | None = None
 
     async def _open_block(kind: str, message_id: str) -> None:
         """打开内容块；若当前块类型不同，先闭合旧块。"""
@@ -198,15 +141,13 @@ async def stream_agent_events(
             )
 
     async def _emit_step_end(
-        data: tuple[str, str | None, str | None, dict[str, int] | None, float],
+        data: tuple[str, dict[str, int] | None, float],
     ) -> None:
-        message_id, finish_reason, raw_finish_reason, usage, started_at = data
+        message_id, usage, started_at = data
         await queue.put(
             factory.emit(
                 StepEnd,
                 message_id=message_id,
-                finish_reason=finish_reason,
-                raw_finish_reason=raw_finish_reason,
                 usage=usage,
                 duration_ms=int((time.monotonic() - started_at) * 1000),
             )
@@ -291,11 +232,8 @@ async def stream_agent_events(
             if usage is not None:
                 for key, value in usage.items():
                     usage_totals[key] = usage_totals.get(key, 0) + value
-            finish_reason, raw_finish_reason = _extract_finish_reason(output)
             pending = (
                 message_id,
-                finish_reason,
-                raw_finish_reason,
                 usage,
                 started_at,
             )
@@ -377,7 +315,6 @@ async def stream_agent_events(
 
         yield factory.emit(
             RunFinish,
-            finish_reason="stop",
             usage=usage_totals or None,
             duration_ms=int((time.monotonic() - run_started_at) * 1000),
         )

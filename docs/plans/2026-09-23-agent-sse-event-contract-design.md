@@ -50,10 +50,10 @@ controller/api.py               控制器：async for ev: yield to_sse(ev)
 | type | 时机 | 专有字段 |
 |---|---|---|
 | `run.start` | 流开始，仅一次 | `thread_id`, `model` |
-| `run.finish` | 终止 | `finish_reason`(run 级), `usage?`(整轮汇总), `duration_ms` |
+| `run.finish` | 终止 | `usage?`(整轮汇总), `duration_ms` |
 | `run.error` | 终止 | `code`, `message`, `retryable`, `details`(含 `error_type`) |
 | `step.start` | loop 一次迭代开始 | `message_id` |
-| `step.end` | 该迭代结束（含工具执行后） | `message_id`, `finish_reason?`(归一化), `raw_finish_reason?`, `duration_ms`, `usage?`(该次模型调用) |
+| `step.end` | 该迭代结束（含工具执行后） | `message_id`, `duration_ms`, `usage?`(该次模型调用) |
 | `reasoning.start` | 推理块开始（惰性） | `message_id` |
 | `reasoning.delta` | 推理增量 | `message_id`, `delta` |
 | `reasoning.end` | 推理块结束 | `message_id`, `duration_ms` |
@@ -77,7 +77,7 @@ step.start                (m1)
   text.start → text.delta* → text.end
   tool.start → tool.args* → tool.end
   tool.result
-step.end                  (m1: finish_reason, usage, duration_ms)
+step.end                  (m1: usage, duration_ms)
 step.start                (m2)
   reasoning.start → reasoning.delta* → reasoning.end
   text.start → text.delta* → text.end
@@ -94,34 +94,9 @@ run.finish                (整轮 usage 汇总)
 1. **终止唯一**：`run.finish` / `run.error` / `interrupt` 三选一；前端据此 `reader.cancel()`。
 2. **工具失败 ≠ 致命错误**：工具异常发 `tool.result{is_error:true}`（非终止）；
    仅 run 级失败发终止的 `run.error`。
-3. **`finish_reason` 分两级**：
-   - step 级（`step.end`，模型为何停止）：归一化 `stop | length | tool_calls | content_filter | refusal | error | other` + 原始值 `raw_finish_reason`。
-   - run 级（`run.finish`，整轮为何结束）：`stop | interrupted | error | cancelled`。
-4. **`error.code`**：命名空间字符串（如 `model.rate_limit`、`internal`），配 `retryable`。
-5. **思考（reasoning）粒度**：每个 step（一次模型调用）一个独立思考块，`reasoning.end.duration_ms`
+3. **`error.code`**：命名空间字符串（如 `model.rate_limit`、`internal`）。
+4. **思考（reasoning）粒度**：每个 step（一次模型调用）一个独立思考块，`reasoning.end.duration_ms`
    为该次调用的思考跨度；块在首个非 reasoning 事件（text/tool）前闭合。
-
-## 8.1 finish_reason 归一化与渲染
-
-读取顺序：`output.response_metadata["finish_reason"]` → `["stop_reason"]`，大小写不敏感。
-
-| 归一化 | 命中原始值 |
-|---|---|
-| `stop` | stop, end_turn, STOP, COMPLETE, stop_sequence |
-| `length` | length, max_tokens, MAX_TOKENS, model_length |
-| `tool_calls` | tool_calls, tool_use, TOOL_CALL, function_call |
-| `content_filter` | content_filter, SAFETY, RECITATION, BLOCKLIST, PROHIBITED_CONTENT, SPII, IMAGE_SAFETY, LANGUAGE |
-| `refusal` | refusal |
-| `error` | error, ERROR, ERROR_LIMIT, MALFORMED_FUNCTION_CALL, UNEXPECTED_TOOL_CALL, insufficient_system_resource |
-| `other` | OTHER, FINISH_REASON_UNSPECIFIED, 未知值 |
-
-**渲染原则**：后端只给枚举，前端本地化文案；只渲染「异常/需提示」的原因。
-
-- step 级：`length`→「回答被截断」；`content_filter`→「内容被安全策略拦截」；`refusal`→「模型拒绝回答」；
-  `error`→错误提示（与 `run.error` 去重）；`stop`/`tool_calls`/`other`/`None`→不渲染。
-- run 级：`stop`→正常；`cancelled`→「已停止」；`interrupted`→走 `interrupt` 审批 UI；`error`→错误横幅。
-- 观测面板（折叠）：`raw_finish_reason`、`model`、`duration_ms`、`usage`（含 `cached_tokens`/`reasoning_tokens`）。
-- `tool.end` 仅表示**参数生成完毕**，工具执行中的状态区间是 `tool.end → tool.result`。
 
 ## 9. 编码与工厂
 
@@ -152,7 +127,7 @@ def to_sse(event: BaseEvent) -> ServerSentEvent:
 
 ## 12. 验证
 
-- 纯函数单测：`to_sse`、`EventFactory`、`_normalize_finish_reason`、`_is_retryable`、`_arg_delta`。
+- 纯函数单测：`to_sse`、`EventFactory`、`_arg_delta`。
 - 编排测试（离线脚本模型）：run/step 生命周期、块顺序、终止唯一、`tool.result` 早于 `step.end`、
   `step.end`/`run.finish` 用量、错误路径。
 - 3.14 与 3.11 全量通过。
@@ -161,6 +136,5 @@ def to_sse(event: BaseEvent) -> ServerSentEvent:
 
 - LangGraph v3 为实验性 API；只依赖公开投影，不解析内部事件名。
 - `ToolCallChunk.args` 是**累积快照**，用 `_arg_delta` 差分；每片都带粘性 `id`/`name`。
-- `finish_reason` 依赖 provider 是否在 `response_metadata` 提供；缺失时为 `None`。
 - 单次调用内交错思考（如 Anthropic interleaved-thinking beta）不在当前范围。
 - `state` / `custom` 尚未发出（后续接入 `run.values` / `CustomTransformer`）。

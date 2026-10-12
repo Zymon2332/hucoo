@@ -3,7 +3,6 @@ from typing import Any
 
 from harness.streaming.agent_stream import (
     _arg_delta,
-    _normalize_finish_reason,
     stream_agent_events,
 )
 from service.agent_service import RuntimeContext
@@ -57,16 +56,6 @@ def test_arg_delta_from_growing_snapshots():
     assert _arg_delta('{"city"', '{"city": "Beijing"}') == ': "Beijing"}'
     assert _arg_delta("", '{"city": "Beijing"}') == '{"city": "Beijing"}'
     assert _arg_delta('{"city"', "other") == "other"
-
-
-def test_normalize_finish_reason():
-    assert _normalize_finish_reason("end_turn") == "stop"
-    assert _normalize_finish_reason("MAX_TOKENS") == "length"
-    assert _normalize_finish_reason("tool_use") == "tool_calls"
-    assert _normalize_finish_reason("SAFETY") == "content_filter"
-    assert _normalize_finish_reason("refusal") == "refusal"
-    assert _normalize_finish_reason("weird") == "other"
-    assert _normalize_finish_reason(None) is None
 
 
 # --------------------------------------------------------------------------- #
@@ -125,17 +114,8 @@ async def test_step_end_fields():
     ends = [e for e in events if e.type == "step.end"]
     assert ends
     final = ends[-1]
-    assert final.finish_reason == "stop"
-    assert final.raw_finish_reason == "stop"
     assert final.usage is not None
     assert final.usage["total_tokens"] == 28
-
-
-async def test_step_end_finish_reason_length():
-    events = await _run(build_scripted_agent(finish_reason="length"), "tl")
-    ends = [e for e in events if e.type == "step.end"]
-    assert ends[-1].finish_reason == "length"
-    assert ends[-1].raw_finish_reason == "length"
 
 
 async def test_tool_result_before_step_end():

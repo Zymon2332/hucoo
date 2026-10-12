@@ -35,20 +35,6 @@ class BaseEvent(BaseModel):
     """事件时间戳，epoch 毫秒。"""
 
 
-ModelFinishReason = Literal[
-    "stop", "length", "tool_calls", "content_filter", "refusal", "error", "other"
-]
-"""模型（step 级）停止原因，已跨 provider 归一化。"""
-
-RunFinishReason = Literal["stop", "interrupted", "error", "cancelled"]
-"""整个 agent 轮次（run 级）的结束原因。
-
-TODO: 目前 ``stream_agent_events`` 只发出 ``"stop"``；``"interrupted"`` 走
-``interrupt`` 事件、``"error"`` 走 ``RunError``、``"cancelled"`` 尚未发出，
-故这三个取值暂未实际使用（保留于契约）。
-"""
-
-
 # --------------------------------------------------------------------------- #
 # Run 生命周期
 # --------------------------------------------------------------------------- #
@@ -62,7 +48,6 @@ class RunStart(BaseEvent):
 
 class RunFinish(BaseEvent):
     type: Literal["run.finish"] = "run.finish"
-    finish_reason: RunFinishReason
     usage: dict[str, int] | None = None
     """整轮汇总用量（各 step 用量之和，含 token 细分）。"""
     duration_ms: int | None = None
@@ -90,10 +75,6 @@ class StepStart(BaseEvent):
 class StepEnd(BaseEvent):
     type: Literal["step.end"] = "step.end"
     message_id: str
-    finish_reason: ModelFinishReason | None = None
-    """该次模型调用的归一化停止原因。"""
-    raw_finish_reason: str | None = None
-    """provider 原始停止原因（保真，供观测）。"""
     duration_ms: int | None = None
     """该 step 整个迭代耗时（含工具执行）。"""
     usage: dict[str, int] | None = None

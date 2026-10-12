@@ -30,7 +30,6 @@ class ScriptedChatModel(BaseChatModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
     calls: int = 0
-    finish_reason: str = "stop"
 
     @property
     def _llm_type(self) -> str:
@@ -85,17 +84,13 @@ class ScriptedChatModel(BaseChatModel):
                     "input_token_details": {"cache_read": 5},
                     "output_token_details": {"reasoning": 3},
                 },
-                response_metadata={
-                    "finish_reason": self.finish_reason,
-                    "model_name": "scripted",
-                },
             )
         )
 
 
-def build_scripted_agent(*, finish_reason: str = "stop"):
+def build_scripted_agent():
     return create_agent(
-        model=ScriptedChatModel(finish_reason=finish_reason),
+        model=ScriptedChatModel(),
         tools=[get_weather],
         context_schema=RuntimeContext,
         checkpointer=InMemorySaver(),

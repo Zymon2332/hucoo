@@ -69,8 +69,6 @@ export function basicRunEvents(echo?: string): AgentEvent[] {
     ev({
       type: "step.end",
       message_id: "m1",
-      finish_reason: "tool_calls",
-      raw_finish_reason: "tool_use",
       duration_ms: 2570,
       usage: { input_tokens: 1180, output_tokens: 96, reasoning_tokens: 240 },
     }),
@@ -95,15 +93,12 @@ export function basicRunEvents(echo?: string): AgentEvent[] {
     ev({
       type: "step.end",
       message_id: "m2",
-      finish_reason: "stop",
-      raw_finish_reason: "stop",
       duration_ms: 1250,
       usage: { input_tokens: 1420, output_tokens: 480, reasoning_tokens: 160 },
     }),
 
     ev({
       type: "run.finish",
-      finish_reason: "stop",
       duration_ms: 5820,
       usage: { input_tokens: 2600, output_tokens: 576, reasoning_tokens: 400, cached_tokens: 320 },
     }),
@@ -126,14 +121,11 @@ export function resumeRunEvents(): AgentEvent[] {
     ev({
       type: "step.end",
       message_id: "m1",
-      finish_reason: "stop",
-      raw_finish_reason: "stop",
       duration_ms: 420,
       usage: { input_tokens: 120, output_tokens: 24 },
     }),
     ev({
       type: "run.finish",
-      finish_reason: "stop",
       duration_ms: 640,
       usage: { input_tokens: 120, output_tokens: 24 },
     }),

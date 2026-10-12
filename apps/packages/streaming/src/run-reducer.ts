@@ -1,9 +1,4 @@
-import type {
-  AgentEvent,
-  FinishReason,
-  RunFinishReason,
-  Usage,
-} from "./events";
+import type { AgentEvent, Usage } from "./events";
 
 export type RunStatus = "idle" | "streaming" | "finished" | "error" | "interrupted";
 
@@ -38,8 +33,6 @@ export type ContentBlock =
 export interface RunStep {
   messageId: string;
   blocks: ContentBlock[];
-  finishReason?: FinishReason | null;
-  rawFinishReason?: string | null;
   durationMs?: number;
   usage?: Usage;
 }
@@ -52,7 +45,6 @@ export interface RunState {
   steps: RunStep[];
   usage?: Usage;
   durationMs?: number;
-  finishReason?: RunFinishReason;
   error?: {
     code: string;
     message: string;
@@ -206,8 +198,6 @@ export function runReducer(state: RunState, event: AgentEvent): RunState {
       const s = step();
       if (s) {
         closeOpenBlock(s);
-        s.finishReason = event.finish_reason;
-        s.rawFinishReason = event.raw_finish_reason;
         s.durationMs = event.duration_ms;
         s.usage = event.usage;
       }
@@ -218,7 +208,6 @@ export function runReducer(state: RunState, event: AgentEvent): RunState {
       return {
         ...next,
         status: "finished",
-        finishReason: event.finish_reason,
         usage: event.usage,
         durationMs: event.duration_ms,
       };
