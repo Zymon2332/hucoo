@@ -25,6 +25,19 @@ class SessionRepository:
             )
             return result.scalar_one_or_none() is not None
 
+    async def list_by_user(self, user_id: str) -> list[AgentSession]:
+        """按用户列出正常状态（status=1）会话，按更新时间倒序。"""
+        async with self._sessionmaker() as session:
+            result = await session.execute(
+                select(AgentSession)
+                .where(
+                    AgentSession.user_id == user_id,
+                    AgentSession.status == 1,
+                )
+                .order_by(AgentSession.updated_at.desc())
+            )
+            return list(result.scalars().all())
+
     async def create(
         self, thread_id: str, user_id: str, title: str | None = None
     ) -> None:

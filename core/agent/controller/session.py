@@ -6,11 +6,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Path, Query
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import RunnableConfig
+from pydantic import BaseModel, Field
 
 from constants.error_code import ErrorCode
 from controller.deps import CheckpointerDep, SessionRepoDep
@@ -22,6 +24,15 @@ session_router = APIRouter(
     prefix="/session",
     tags=["session"],
 )
+
+
+class SessionSummary(BaseModel):
+    """会话列表中的单条摘要（业务元数据）。"""
+
+    session_id: str = Field(description="会话 id")
+    title: str | None = Field(default=None, description="会话标题")
+    created_at: datetime = Field(description="创建时间")
+    updated_at: datetime = Field(description="更新时间")
 
 
 async def _load_messages(
@@ -69,5 +80,37 @@ async def get_session_messages(
     data = [
         message.model_dump(exclude_none=True)
         for message in assemble_chat_messages(messages)
+    ]
+    return ServiceResponse(code=ErrorCode.Success, data=data)
+
+
+@session_router.get(
+    "",
+    response_model=ServiceResponse,
+    summary="获取会话列表",
+)
+async def list_sessions(
+    session_repo: SessionRepoDep,
+    user_id: Annotated[str, Query(min_length=1, description="用户 id")],
+) -> ServiceResponse:
+    """按 ``user_id`` 获取该用户的会话列表。
+
+    Args:
+        session_repo: 应用级会话业务表 repository（依赖注入）。
+        user_id: 用户 id（必填 query）。
+
+    Returns:
+        ServiceResponse: ``data`` 为 ``SessionSummary`` 列表（``updated_at`` 倒序）；
+        无会话时为 ``[]``。
+    """
+    sessions = await session_repo.list_by_user(user_id)
+    data = [
+        SessionSummary(
+            session_id=session.thread_id,
+            title=session.title,
+            created_at=session.created_at,
+            updated_at=session.updated_at,
+        ).model_dump()
+        for session in sessions
     ]
     return ServiceResponse(code=ErrorCode.Success, data=data)
